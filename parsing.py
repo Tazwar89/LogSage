@@ -23,7 +23,7 @@ def parse_file(file_path):
     Parses a full log file into a list of structured dict, skipping malformed lines.
     """
     parsed_logs, skipped_lines = [], 0
-    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
         for line in f:
             if not line.strip():
                 continue
@@ -45,7 +45,7 @@ def save_json(parsed_logs, output_path):
     """
     Saves the parsed logs to a JSON file.
     """
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(parsed_logs, f, indent=2)
 
 
