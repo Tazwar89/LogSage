@@ -1,0 +1,4 @@
+[
+  {"issue": "OutOfMemoryError in FSNamesystem", "fix": "Increase JVM heap size via -Xmx flag"},
+  {"issue": "Connection refused to DataNode", "fix": "Check DataNode process status and firewall rules"}
+]

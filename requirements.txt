@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+pandas
+drain3
+sentence-transformers
+faiss-cpu
+openai
+python-multipart
