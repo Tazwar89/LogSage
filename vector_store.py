@@ -11,8 +11,10 @@ class VectorStore:
         self.index = faiss.IndexFlatL2(dim)
         self.id_map = {}  # faiss internal index -> metadata
 
+
     def embed(self, texts):
         return self.model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
+
 
     def build_index(self, templates: dict):
         """templates: {template_id: template_string}"""
@@ -21,6 +23,7 @@ class VectorStore:
         vectors = self.embed(texts)
         self.index.add(np.array(vectors, dtype="float32"))
         self.id_map = {i: {"template_id": ids[i], "text": texts[i]} for i in range(len(ids))}
+
 
     def query(self, text, k=1):
         vec = self.embed([text]).astype("float32")
@@ -35,11 +38,13 @@ class VectorStore:
 
         return results
 
+
     def save(self, path="index"):
         faiss.write_index(self.index, f"{path}.faiss")
 
         with open(f"{path}_meta.pkl", "wb") as f:
             pickle.dump(self.id_map, f)
+
 
     def load(self, path="index"):
         self.index = faiss.read_index(f"{path}.faiss")
