@@ -50,5 +50,5 @@ def save_json(parsed_logs, output_path):
 
 
 if __name__ == "__main__":
-    logs = parse_file("HDFS_2k.log")
-    save_json(logs, "parsed_logs.json")
+    logs = parse_file("data/HDFS_2k.log")
+    save_json(logs, "data/parsed_logs.json")
