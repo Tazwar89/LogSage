@@ -26,18 +26,19 @@ async def upload_logs(file: UploadFile):
     content = (await file.read()).decode("utf-8", errors="ignore")
     lines = content.splitlines()
 
-    parsed = [parse_line(l) for l in lines if l.strip()]
-    parsed = [p for p in parsed if p]  # drop malformed
-    annotated = deduplicate_logs(parsed, template_miner)
+    parsed_logs = [parse_line(l) for l in lines if l.strip()]
+    parsed_logs = [p for p in parsed_logs if p]  # drop malformed
+    annotated_logs = deduplicate_logs(parsed_logs, template_miner)
 
-    for i, entry in enumerate(annotated):
-        trace_id = f"{file.filename}-{i}"
-        parsed_logs_db[trace_id] = entry
+    if annotated_logs is not None:
+        for i, entry in enumerate(annotated_logs):
+            trace_id = f"{file.filename}-{i}"
+            parsed_logs_db[trace_id] = entry
 
     templates = get_unique_templates(template_miner)
     normal_store.build_index(templates)
 
-    return {"ingested": len(annotated), "unique_templates": len(templates)}
+    return {"ingested": len(annotated_logs or []), "unique_templates": len(templates)}
 
 
 @app.get("/analyze/{trace_id}")
