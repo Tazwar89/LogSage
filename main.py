@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, HTTPException
 from parsing import parse_line, save_json
 from embedding import build_template_miner, deduplicate_logs, get_unique_templates
-from vectorstore import VectorStore
+from vector_store import VectorStore
 from anomaly import is_anomalous
 from rag import load_knowledge_base, build_kb_index, retrieve_context
 from llm_analysis import analyze_log
