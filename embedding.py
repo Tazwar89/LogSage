@@ -20,7 +20,7 @@ def deduplicate_logs(logs, template_miner):
     for log_line in logs:
         result = template_miner.add_log_message(log_line["message"])
         log_line["template_id"] = result["cluster_id"]
-        log_line["template_string"] = result["template_string"]
+        log_line["template_string"] = result["template_mined"]
         annotated_logs.append(log_line)
 
         return annotated_logs
