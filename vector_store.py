@@ -21,6 +21,7 @@ class VectorStore:
         ids = list(templates.keys())
         texts = list(templates.values())
         vectors = self.embed(texts)
+        self.index = faiss.IndexFlatL2(self.index.d)
         self.index.add(np.array(vectors, dtype="float32"))
         self.id_map = {i: {"template_id": ids[i], "text": texts[i]} for i in range(len(ids))}
 
