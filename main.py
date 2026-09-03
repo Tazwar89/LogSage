@@ -21,24 +21,29 @@ def startup():
     kb_lookup = build_kb_index(kb_store, kb_entries)
 
 
-@app.post("/upload")
-async def upload_logs(file: UploadFile):
+@app.post("/upload/baseline")
+async def upload_baseline(file: UploadFile):
     content = (await file.read()).decode("utf-8", errors="ignore")
     lines = content.splitlines()
-
-    parsed_logs = [parse_line(l) for l in lines if l.strip()]
-    parsed_logs = [p for p in parsed_logs if p]  # drop malformed
+    parsed_logs = [p for p in (parse_line(l) for l in lines if l.strip()) if p]
     annotated_logs = deduplicate_logs(parsed_logs, template_miner)
-
-    if annotated_logs is not None:
-        for i, entry in enumerate(annotated_logs):
-            trace_id = f"{file.filename}-{i}"
-            parsed_logs_db[trace_id] = entry
-
     templates = get_unique_templates(template_miner)
     normal_store.build_index(templates)
 
-    return {"ingested": len(annotated_logs or []), "unique_templates": len(templates)}
+    return {"baseline_templates": len(templates)}
+
+
+@app.post("/upload/logs")
+async def upload_logs(file: UploadFile):
+    content = (await file.read()).decode("utf-8", errors="ignore")
+    lines = content.splitlines()
+    parsed_logs = [p for p in (parse_line(l) for l in lines if l.strip()) if p]
+
+    for i, entry in enumerate(parsed_logs):
+        trace_id = f"{file.filename}-{i}"
+        parsed_logs_db[trace_id] = entry
+
+    return {"ingested": len(parsed_logs)}
 
 
 @app.get("/analyze/{trace_id}")
