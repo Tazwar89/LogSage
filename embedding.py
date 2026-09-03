@@ -23,7 +23,7 @@ def deduplicate_logs(logs, template_miner):
         log_line["template_string"] = result["template_mined"]
         annotated_logs.append(log_line)
 
-        return annotated_logs
+    return annotated_logs
 
 
 def get_unique_templates(template_miner):
