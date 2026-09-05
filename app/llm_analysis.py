@@ -1,6 +1,6 @@
 import os, json
 from openai import OpenAI
-from redact import redact
+from app.redact import redact
 
 client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
@@ -15,6 +15,13 @@ Related historical issues/fixes:
 Respond ONLY in JSON with keys: root_cause, suggested_fix, confidence (0-1)."""
 
 def analyze_log(log_entry, context_entries):
+    if os.getenv("MOCK_LLM") == "true":
+        return {
+            "root_cause": "Simulated root cause for testing",
+            "suggested_fix": "Simulated fix suggestion",
+            "confidence": 0.87
+        }
+
     safe_log = redact(log_entry)
     context_str = "\n".join(
         f"- Issue: {c['issue']} | Fix: {c['fix']}" for c in context_entries
