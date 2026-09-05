@@ -27,6 +27,7 @@ class TestIsAnomalous:
         assert nearest is not None, "No nearest object was found"
         assert nearest["distance"] == 0.1
 
+
     def test_above_threshold_is_anomalous(self):
         store = FakeVectorStore([{"template_id": 1, "text": "known pattern", "distance": 0.9}])
 
@@ -36,6 +37,7 @@ class TestIsAnomalous:
         assert nearest is not None, "No nearest object was found"
         assert nearest["distance"] == 0.9
 
+
     def test_exactly_at_threshold_is_not_anomalous(self):
         # Strictly greater-than semantics: distance == threshold should NOT flag as anomalous
         store = FakeVectorStore([{"template_id": 1, "text": "boundary case", "distance": 0.6}])
@@ -43,6 +45,7 @@ class TestIsAnomalous:
         anomalous, _ = is_anomalous("boundary log line", store, threshold=0.6)
 
         assert anomalous is False
+
 
     def test_empty_index_is_treated_as_anomalous(self):
         # No results at all (e.g. index not built yet) should be conservatively flagged
@@ -52,6 +55,7 @@ class TestIsAnomalous:
 
         assert anomalous is True
         assert nearest is None
+
 
     def test_custom_threshold_is_respected(self):
         store = FakeVectorStore([{"template_id": 1, "text": "pattern", "distance": 0.3}])

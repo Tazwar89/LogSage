@@ -23,15 +23,19 @@ class TestParseLine:
         assert result["component"] == "dfs.DataNode$PacketResponder"
         assert result["message"] == "PacketResponder 1 for block blk_38865049064139660 terminating"
 
+
     def test_returns_none_for_malformed_line(self):
         assert parse_line("this is not a valid log line") is None
+
 
     def test_returns_none_for_empty_string(self):
         assert parse_line("") is None
 
+
     def test_returns_none_for_missing_fields(self):
         # Missing PID and level
         assert parse_line("081109 203615 dfs.DataNode: something happened") is None
+
 
     def test_handles_trailing_whitespace_and_carriage_return(self):
         line = "081109 203615 148 INFO dfs.DataNode$PacketResponder: terminating\r\n"
@@ -39,6 +43,7 @@ class TestParseLine:
 
         assert result is not None
         assert result["message"] == "terminating"
+
 
     def test_component_allows_dollar_sign_and_dots(self):
         line = "081109 203615 148 INFO dfs.FSNamesystem$Something.Nested: msg here"
@@ -62,6 +67,7 @@ class TestParseFile:
         assert parsed[0]["message"] == "line one"
         assert parsed[1]["message"] == "line two"
 
+
     def test_skips_malformed_lines_without_crashing(self, tmp_path):
         log_file = tmp_path / "mixed.log"
         log_file.write_text(
@@ -75,6 +81,7 @@ class TestParseFile:
         assert len(parsed) == 2
         assert all("message" in entry for entry in parsed)
 
+
     def test_skips_blank_lines(self, tmp_path):
         log_file = tmp_path / "blanks.log"
         log_file.write_text(
@@ -87,6 +94,7 @@ class TestParseFile:
         parsed = parse_file(str(log_file))
 
         assert len(parsed) == 2
+
 
     def test_empty_file_returns_empty_list(self, tmp_path):
         log_file = tmp_path / "empty.log"
