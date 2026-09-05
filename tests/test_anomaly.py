@@ -24,6 +24,7 @@ class TestIsAnomalous:
         anomalous, nearest = is_anomalous("some log line", store, threshold=0.6)
 
         assert anomalous is False
+        assert nearest is not None, "No nearest object was found"
         assert nearest["distance"] == 0.1
 
     def test_above_threshold_is_anomalous(self):
@@ -32,6 +33,7 @@ class TestIsAnomalous:
         anomalous, nearest = is_anomalous("a very different log line", store, threshold=0.6)
 
         assert anomalous is True
+        assert nearest is not None, "No nearest object was found"
         assert nearest["distance"] == 0.9
 
     def test_exactly_at_threshold_is_not_anomalous(self):
