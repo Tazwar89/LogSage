@@ -20,7 +20,6 @@ class VectorStore:
         """templates: {template_id: template_string}"""
         ids = list(templates.keys())
         texts = list(templates.values())
-        vectors = self.embed(texts)
         self.index = faiss.IndexFlatL2(self.index.d)
 
         if texts:

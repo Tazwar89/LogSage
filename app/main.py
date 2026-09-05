@@ -9,6 +9,7 @@ from .llm_analysis import analyze_log
 from .log_store import LogStore
 from .kafka_producer import get_producer, publish_batch
 from .agentic_pipeline import run_diagnostic_pipeline
+from .analytics import compute_log_stats
 
 
 template_miner = build_template_miner()
@@ -70,6 +71,18 @@ def analyze(trace_id: str):
     result = run_diagnostic_pipeline(entry["message"], kb_store, kb_lookup)
 
     return {"trace_id": trace_id, "anomalous": True, **result}
+
+
+@app.get("/stats")
+def stats():
+    entries: list[dict] = [
+        entry for tid in log_store.list_trace_ids()
+        if (entry := log_store.get(tid.decode("utf-8")
+                                   if isinstance(tid, bytes)
+                                   else tid)) is not None
+    ]
+
+    return compute_log_stats(entries)
 
 
 @app.get("/logs")
