@@ -7,6 +7,7 @@ from .anomaly import is_anomalous
 from .rag import load_knowledge_base, build_kb_index, retrieve_context
 from .llm_analysis import analyze_log
 from .log_store import LogStore
+from .kafka_producer import get_producer, publish_batch
 
 
 template_miner = build_template_miner()
@@ -14,6 +15,7 @@ normal_store = VectorStore()
 kb_store = VectorStore()
 kb_lookup = {}
 log_store = LogStore()  # Redis-backed; replaces the old in-memory parsed_logs_db dict
+producer = get_producer()
 
 
 @asynccontextmanager
@@ -45,11 +47,10 @@ async def upload_logs(file: UploadFile):
     lines = content.splitlines()
     parsed_logs = [p for p in (parse_line(l) for l in lines if l.strip()) if p]
 
-    for i, entry in enumerate(parsed_logs):
-        trace_id = f"{file.filename}-{i}"
-        log_store.save(trace_id, entry)
+    entries_with_ids = [(f"{file.filename}-{i}", entry) for i, entry in enumerate(parsed_logs)]
+    published = publish_batch(producer, entries_with_ids)
 
-    return {"ingested": len(parsed_logs)}
+    return {"published_to_kafka": published, "total_parsed": len(parsed_logs)}
 
 
 @app.get("/analyze/{trace_id}")
