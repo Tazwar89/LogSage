@@ -6,7 +6,6 @@ client = OpenAI(
     api_key=os.environ["GROQ_API_KEY"],
     base_url="https://api.groq.com/openai/v1"
 )
-# model="llama-3.1-8b-instant"
 
 PROMPT_TEMPLATE = """You are a log diagnostic assistant.
 
@@ -34,7 +33,7 @@ def analyze_log(log_entry, context_entries):
     prompt = PROMPT_TEMPLATE.format(log_entry=safe_log, context=context_str)
 
     response = client.chat.completions.create(
-        model="llama-3.1-8b-instant",
+        model="openai/gpt-oss-20b",
         #model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"},
