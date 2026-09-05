@@ -6,7 +6,10 @@ Built against the [Loghub HDFS](https://github.com/logpai/loghub) dataset as a r
 
 ## Why this exists
 
-Manually reading through thousands of system log lines to find the handful that actually matter is slow and error-prone. LogSage automates that triage: it learns what "normal" log activity looks like, flags lines that deviate from it, and only spends LLM inference (and its associated cost/latency) on the anomalies — not on every log line.
+Manually reading through thousands of system log lines to find the handful that actually matter is slow and error-prone. LogSage automates that triage:
+- it learns what "normal" log activity looks like
+- flags lines that deviate from it
+- only spends LLM inference (and its associated cost/latency) on the anomalies.
 
 ## Architecture
 
@@ -32,10 +35,10 @@ Raw log file
                                         no             yes
                                          │              │
                                          ▼              ▼
-                                  return match     ┌──────────────┐
-                                  (no LLM call)    │ RAG Retrieval│
-                                                   │ (known fixes)│
-                                                   └──────────────┘
+                                  return match     ┌───────────────┐
+                                  (no LLM call)    │ RAG Retrieval │
+                                                   │ (known fixes) │
+                                                   └───────────────┘
                                                           │
                                                           ▼
                                                    ┌──────────────┐
@@ -48,18 +51,18 @@ Raw log file
 
 ### Key design decision: separate baseline vs. analysis ingestion
 
-Anomaly detection only works if new events are scored against a **fixed, stable reference distribution**. If the log you're trying to analyze is included in the same batch used to build that reference index, it trivially matches itself (distance ≈ 0) and never gets flagged — the detector becomes useless.
+Anomaly detection only works if new events are scored against a **fixed, stable reference distribution**. If the log you're trying to analyze is included in the same batch used to build that reference index, it trivially matches itself (distance ≈ 0) and never gets flagged.
 
 To prevent this, ingestion is split into two distinct endpoints:
 
 - **`POST /upload/baseline`** — parses a log file, mines templates, and *rebuilds* the FAISS "normal" index from it. Use this with a clean, representative log sample.
 - **`POST /upload/logs`** — parses a log file and stores each line for later analysis, **without** touching the baseline index.
 
-This mirrors how anomaly detection is actually done in production systems: the reference distribution is established once (or periodically retrained), and new events are always scored against it, never mixed into it.
+This mirrors how anomaly detection is actually done in production systems: the reference distribution is established once (or periodically retrained), and new events are always scored against it.
 
 ## Pipeline stages
 
-1. **Parsing** (`app/parsing.py`) — regex-based extraction of `date`, `time`, `pid`, `level`, `component`, and `message` from each HDFS-style log line. Malformed lines are skipped, not fatal.
+1. **Parsing** (`app/parsing.py`) — regex-based extraction of `date`, `time`, `pid`, `level`, `component`, and `message` from each HDFS-style log line. Malformed lines are skipped.
 2. **Template mining** (`app/embedding.py`) — uses [Drain3](https://github.com/logpai/Drain3) to cluster raw messages into templates (e.g. `"blk_123 terminating"` → `"<*> terminating"`), collapsing thousands of near-duplicate lines into a small set of unique patterns.
 3. **Embedding + indexing** (`app/vector_store.py`) — embeds unique templates with `sentence-transformers` (`all-MiniLM-L6-v2`) and stores them in a FAISS `IndexFlatL2` index. Rebuilt fresh on every `/upload/baseline` call to avoid stale/accumulated vectors.
 4. **Anomaly detection** (`app/anomaly.py`) — embeds an incoming log line and computes its L2 distance to the nearest baseline template. Distance above a threshold (default `0.6`) triggers the LLM branch; below it, the log is treated as normal and returned immediately with **no LLM call** (this is the cost-control mechanism).
@@ -69,13 +72,13 @@ This mirrors how anomaly detection is actually done in production systems: the r
 
 ## API endpoints
 
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/upload/baseline` | Builds/rebuilds the normal-pattern reference index from a clean log file |
-| `POST` | `/upload/logs` | Ingests a log file for later analysis (does not affect the baseline index) |
-| `GET` | `/analyze/{trace_id}` | Runs anomaly detection (+ RAG + LLM if anomalous) on a specific parsed log line |
-| `GET` | `/logs` | Lists all currently stored trace IDs |
-| `GET` | `/docs` | Interactive Swagger UI |
+| Method |          Path         |                           Description                                  |
+|--------|-----------------------|------------------------------------------------------------------------|
+| `POST` | `/upload/baseline`    | Builds/rebuilds the normal-pattern reference index from a clean log file |
+| `POST` | `/upload/logs`        | Ingests a log file for later analysis (does not affect the baseline index) |
+| `GET`  | `/analyze/{trace_id}` | Runs anomaly detection (+ RAG + LLM if anomalous) on a specific parsed log line |
+| `GET`  | `/logs`               | Lists all currently stored trace IDs |
+| `GET`  | `/docs`               | Interactive Swagger UI |
 
 ## Tech stack
 
@@ -92,7 +95,7 @@ This mirrors how anomaly detection is actually done in production systems: the r
 
 ### Prerequisites
 - Docker Desktop
-- An API key from Groq ([console.groq.com](https://console.groq.com)) or OpenAI
+- An API key from OpenAI or Groq ([console.groq.com](https://console.groq.com))
 
 ### Environment variables
 
@@ -139,7 +142,7 @@ The embedding model is mocked in tests so the suite runs offline in well under a
 
 - In-memory storage: parsed logs and indices reset on container restart (no persistence layer currently).
 - Single-process only — not designed for concurrent multi-user baseline rebuilds.
-- The knowledge base (`data/knowledge_base.json`) is a small, hand-written seed set for demonstration, not a comprehensive fix database.
+- The knowledge base (`data/knowledge_base.json`) is a small, hand-written seed set for demonstration.
 - Anomaly threshold (`0.6`) was chosen empirically against the HDFS_2k dataset and would need re-tuning for other log formats.
 
 ## Possible extensions
