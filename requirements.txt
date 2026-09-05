@@ -1,8 +1,13 @@
 fastapi
 uvicorn[standard]
 pandas
+scikit-learn
 drain3
 sentence-transformers
 faiss-cpu
 openai
 python-multipart
+redis
+langgraph
+langchain-core
+kafka-python
