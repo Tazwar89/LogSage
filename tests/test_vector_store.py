@@ -22,14 +22,19 @@ class FakeSentenceTransformer:
     def __init__(self, *args, **kwargs):
         pass
 
+
     def encode(self, texts, convert_to_numpy=True, normalize_embeddings=True):
         vectors = []
+
         for text in texts:
             rng = np.random.default_rng(abs(hash(text)) % (2**32))
             vec = rng.random(384).astype("float32")
+
             if normalize_embeddings:
                 vec = vec / np.linalg.norm(vec)
+
             vectors.append(vec)
+
         return np.array(vectors, dtype="float32")
 
 
@@ -50,6 +55,7 @@ class TestVectorStore:
         assert results[0]["template_id"] == 1
         assert results[0]["distance"] < 1e-6  # querying an indexed string should match itself near-exactly
 
+
     def test_query_returns_k_results(self):
         store = VectorStore()
         templates = {i: f"template number {i}" for i in range(5)}
@@ -58,6 +64,7 @@ class TestVectorStore:
         results = store.query("template number 0", k=3)
 
         assert len(results) == 3
+
 
     def test_rebuilding_index_does_not_accumulate_stale_vectors(self):
         """
@@ -79,6 +86,7 @@ class TestVectorStore:
         # id_map must be fully replaced, not merged
         assert set(store.id_map.keys()) == {0, 1}
 
+
     def test_query_result_ids_always_resolve_in_id_map(self):
         """
         Regression test: every FAISS-returned index must have a corresponding
@@ -93,6 +101,7 @@ class TestVectorStore:
         for r in results:
             assert "template_id" in r
             assert "text" in r
+
 
     def test_query_on_empty_index_returns_empty_list(self):
         store = VectorStore()
