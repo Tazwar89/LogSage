@@ -28,6 +28,7 @@ services:
 
   logsage:
     build: .
+    image: logsage:latest
     ports:
       - "8000:8000"
     environment:
@@ -43,7 +44,7 @@ services:
         condition: service_started
 
   ingestion-worker:
-    build: .
+    image: logsage:latest   # reuses the image built above, no separate build
     command: python -m app.kafka_consumer
     environment:
       - REDIS_HOST=redis
