@@ -70,15 +70,15 @@ This mirrors how anomaly detection is actually done in production systems: the r
 6. **Redaction** (`app/redact.py`) — strips IPs, emails, and API-key-shaped strings from a log line before it's sent to any external LLM provider.
 7. **LLM analysis** (`app/llm_analysis.py`) — sends the redacted anomalous log plus retrieved context to an LLM, requesting a structured JSON response: `root_cause`, `suggested_fix`, `confidence`.
 
-## API endpoints
+## API Endpoints
 
-| Method |          Path         |                           Description                                  |
-|--------|-----------------------|------------------------------------------------------------------------|
-| `POST` | `/upload/baseline`    | Builds/rebuilds the normal-pattern reference index from a clean log file |
-| `POST` | `/upload/logs`        | Ingests a log file for later analysis (does not affect the baseline index) |
-| `GET`  | `/analyze/{trace_id}` | Runs anomaly detection (+ RAG + LLM if anomalous) on a specific parsed log line |
-| `GET`  | `/logs`               | Lists all currently stored trace IDs |
-| `GET`  | `/docs`               | Interactive Swagger UI |
+| Method | Path | Description |
+| :--- | :--- | :--- |
+| `POST` | `/upload/baseline` | Builds or rebuilds the normal-pattern reference index from a clean log file. |
+| `POST` | `/upload/logs` | Ingests a log file for later analysis (does not affect the baseline index). |
+| `GET` | `/analyze/{trace_id}` | Runs anomaly detection (+ RAG + LLM if anomalous) on a specific parsed log line. |
+| `GET` | `/logs` | Lists all currently stored trace IDs. |
+| `GET` | `/docs` | Serves the interactive Swagger UI documentation. |
 
 ## Tech stack
 
