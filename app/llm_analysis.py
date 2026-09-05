@@ -1,8 +1,12 @@
 import os, json
 from openai import OpenAI
-from app.redact import redact
+from .redact import redact
 
-client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+client = OpenAI(
+    api_key=os.environ["GROQ_API_KEY"],
+    base_url="https://api.groq.com/openai/v1"
+)
+# model="llama-3.1-8b-instant"
 
 PROMPT_TEMPLATE = """You are a log diagnostic assistant.
 
