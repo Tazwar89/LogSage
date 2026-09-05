@@ -8,6 +8,7 @@ from .rag import load_knowledge_base, build_kb_index, retrieve_context
 from .llm_analysis import analyze_log
 from .log_store import LogStore
 from .kafka_producer import get_producer, publish_batch
+from .agentic_pipeline import run_diagnostic_pipeline
 
 
 template_miner = build_template_miner()
@@ -66,9 +67,9 @@ def analyze(trace_id: str):
         return {"trace_id": trace_id, "anomalous": False, "nearest_match": nearest}
 
     context = retrieve_context(entry["message"], kb_store, kb_lookup)
-    result = analyze_log(entry["message"], context)
+    result = run_diagnostic_pipeline(entry["message"], kb_store, kb_lookup)
 
-    return {"trace_id": trace_id, "anomalous": True, "analysis": result, "retrieved_context": context}
+    return {"trace_id": trace_id, "anomalous": True, **result}
 
 
 @app.get("/logs")
