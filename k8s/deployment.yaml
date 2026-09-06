@@ -4,7 +4,7 @@ metadata:
   name: vector-index-pvc
 spec:
   accessModes:
-    - ReadWriteMany   # both ingestion-service (writer) and analysis-service (reader) mount this concurrently
+    - ReadWriteMany   # both ingestion_service (writer) and analysis_service (reader) mount this concurrently
   resources:
     requests:
       storage: 256Mi
@@ -13,7 +13,7 @@ spec:
   # clusters (including minikube's standard provisioner) only supports
   # ReadWriteOnce. For local testing with minikube/kind, either:
   #   (a) enable an RWX-capable addon (e.g. `minikube addons enable nfs-provisioner`), or
-  #   (b) run ingestion-service and analysis-service as a single pod sharing
+  #   (b) run ingestion_service and analysis_service as a single pod sharing
   #       an emptyDir volume instead of a PVC, for local demo purposes only.
   # storageClassName: <your-rwx-capable-class>
 
@@ -102,21 +102,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ingestion-service
+  name: ingestion_service
   labels:
-    app: ingestion-service
+    app: ingestion_service
 spec:
   replicas: 1   # keep at 1: each replica would rebuild the baseline index independently, causing writer races on the shared volume
   selector:
     matchLabels:
-      app: ingestion-service
+      app: ingestion_service
   template:
     metadata:
       labels:
-        app: ingestion-service
+        app: ingestion_service
     spec:
       containers:
-        - name: ingestion-service
+        - name: ingestion_service
           image: logsage-ingestion:latest
           imagePullPolicy: IfNotPresent
           ports:
@@ -151,21 +151,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: analysis-service
+  name: analysis_service
   labels:
-    app: analysis-service
+    app: analysis_service
 spec:
   replicas: 2   # safe to scale: read-only against the shared index, no shared-write races
   selector:
     matchLabels:
-      app: analysis-service
+      app: analysis_service
   template:
     metadata:
       labels:
-        app: analysis-service
+        app: analysis_service
     spec:
       containers:
-        - name: analysis-service
+        - name: analysis_service
           image: logsage-analysis:latest
           imagePullPolicy: IfNotPresent
           ports:
@@ -209,21 +209,21 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: consumer-service
+  name: consumer_service
   labels:
-    app: consumer-service
+    app: consumer_service
 spec:
   replicas: 2   # safe to scale: Kafka consumer group handles partition rebalancing across replicas
   selector:
     matchLabels:
-      app: consumer-service
+      app: consumer_service
   template:
     metadata:
       labels:
-        app: consumer-service
+        app: consumer_service
     spec:
       containers:
-        - name: consumer-service
+        - name: consumer_service
           image: logsage-consumer:latest
           imagePullPolicy: IfNotPresent
           env:

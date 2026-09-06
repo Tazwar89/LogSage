@@ -11,7 +11,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from services.analysis_service.app.agentic_pipeline import (
+from analysis_service.app.agentic_pipeline import (
     build_diagnostic_graph,
     run_diagnostic_pipeline,
     triage_node,
@@ -35,7 +35,7 @@ def mock_llm_client():
     Patches _get_client so every call returns the same fake client, and lets
     the caller configure what JSON payload each response contains.
     """
-    with patch("app.agentic_pipeline._get_client") as mock_get_client:
+    with patch("analysis_service.app.agentic_pipeline._get_client") as mock_get_client:
         client = MagicMock()
         mock_get_client.return_value = client
         yield client

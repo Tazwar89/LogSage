@@ -26,10 +26,10 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
-  ingestion-service:
+  ingestion_service:
     build:
       context: .
-      dockerfile: services/ingestion-service/Dockerfile
+      dockerfile: services/ingestion_service/Dockerfile
     ports:
       - "8001:8001"
     environment:
@@ -41,10 +41,10 @@ services:
       kafka:
         condition: service_started
 
-  analysis-service:
+  analysis_service:
     build:
       context: .
-      dockerfile: services/analysis-service/Dockerfile
+      dockerfile: services/analysis_service/Dockerfile
     ports:
       - "8002:8002"
     environment:
@@ -59,10 +59,10 @@ services:
       redis:
         condition: service_healthy
 
-  consumer-service:
+  consumer_service:
     build:
       context: .
-      dockerfile: services/consumer-service/Dockerfile
+      dockerfile: services/consumer_service/Dockerfile
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379

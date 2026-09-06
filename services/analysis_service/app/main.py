@@ -9,8 +9,8 @@ Responsibilities:
 - GET /stats: Pandas-based aggregate analytics.
 
 Log ingestion into Redis is handled entirely by the separate
-consumer-service (see services/consumer-service) -- this service only ever
-reads from Redis, never writes to it. This keeps analysis-service's FastAPI
+consumer_service (see services/consumer_service) -- this service only ever
+reads from Redis, never writes to it. This keeps analysis_service's FastAPI
 process purely request/response, with no background threads competing with
 the event loop.
 """
@@ -56,14 +56,14 @@ def analyze(trace_id: str):
         raise HTTPException(status_code=404, detail="trace_id not found")
 
     # Reload the baseline index fresh on each request so we always reflect
-    # the latest /upload/baseline call from ingestion-service, without
+    # the latest /upload/baseline call from ingestion_service, without
     # needing any direct coupling between the two services.
     loaded = baseline_store.load()
 
     if not loaded:
         raise HTTPException(
             status_code=503,
-            detail="No baseline index available yet -- call ingestion-service's /upload/baseline first",
+            detail="No baseline index available yet -- call ingestion_service's /upload/baseline first",
         )
 
     anomalous, nearest = is_anomalous(entry["message"], baseline_store, threshold=0.6)
