@@ -1,48 +1,21 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: PersistentVolumeClaim
 metadata:
-  name: logsage
-  labels:
-    app: logsage
+  name: vector-index-pvc
 spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: logsage
-  template:
-    metadata:
-      labels:
-        app: logsage
-    spec:
-      containers:
-        - name: logsage
-          image: logsage:latest
-          imagePullPolicy: IfNotPresent
-          ports:
-            - containerPort: 8000
-          env:
-            - name: REDIS_HOST
-              value: "redis"
-            - name: REDIS_PORT
-              value: "6379"
-            - name: GROQ_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: logsage-secrets
-                  key: groq-api-key
-          readinessProbe:
-            httpGet:
-              path: /docs
-              port: 8000
-            initialDelaySeconds: 10
-            periodSeconds: 10
-          resources:
-            requests:
-              memory: "512Mi"
-              cpu: "250m"
-            limits:
-              memory: "1Gi"
-              cpu: "500m"
+  accessModes:
+    - ReadWriteMany   # both ingestion-service (writer) and analysis-service (reader) mount this concurrently
+  resources:
+    requests:
+      storage: 256Mi
+  # NOTE: ReadWriteMany requires a storage class that supports it (e.g. NFS,
+  # EFS, or Longhorn). The default storage class on most single-node
+  # clusters (including minikube's standard provisioner) only supports
+  # ReadWriteOnce. For local testing with minikube/kind, either:
+  #   (a) enable an RWX-capable addon (e.g. `minikube addons enable nfs-provisioner`), or
+  #   (b) run ingestion-service and analysis-service as a single pod sharing
+  #       an emptyDir volume instead of a PVC, for local demo purposes only.
+  # storageClassName: <your-rwx-capable-class>
 
 ---
 apiVersion: apps/v1
@@ -66,3 +39,204 @@ spec:
           image: redis:7-alpine
           ports:
             - containerPort: 6379
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zookeeper
+  labels:
+    app: zookeeper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zookeeper
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+    spec:
+      containers:
+        - name: zookeeper
+          image: confluentinc/cp-zookeeper:7.5.0
+          env:
+            - name: ZOOKEEPER_CLIENT_PORT
+              value: "2181"
+          ports:
+            - containerPort: 2181
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+  labels:
+    app: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+        - name: kafka
+          image: confluentinc/cp-kafka:7.5.0
+          env:
+            - name: KAFKA_BROKER_ID
+              value: "1"
+            - name: KAFKA_ZOOKEEPER_CONNECT
+              value: "zookeeper:2181"
+            - name: KAFKA_ADVERTISED_LISTENERS
+              value: "PLAINTEXT://kafka:9092"
+            - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+              value: "1"
+          ports:
+            - containerPort: 9092
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingestion-service
+  labels:
+    app: ingestion-service
+spec:
+  replicas: 1   # keep at 1: each replica would rebuild the baseline index independently, causing writer races on the shared volume
+  selector:
+    matchLabels:
+      app: ingestion-service
+  template:
+    metadata:
+      labels:
+        app: ingestion-service
+    spec:
+      containers:
+        - name: ingestion-service
+          image: logsage-ingestion:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8001
+          env:
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka:9092"
+            - name: VECTOR_INDEX_PATH
+              value: "/shared/index"
+          volumeMounts:
+            - name: vector-index
+              mountPath: /shared
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+      volumes:
+        - name: vector-index
+          persistentVolumeClaim:
+            claimName: vector-index-pvc
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analysis-service
+  labels:
+    app: analysis-service
+spec:
+  replicas: 2   # safe to scale: read-only against the shared index, no shared-write races
+  selector:
+    matchLabels:
+      app: analysis-service
+  template:
+    metadata:
+      labels:
+        app: analysis-service
+    spec:
+      containers:
+        - name: analysis-service
+          image: logsage-analysis:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8002
+          env:
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: VECTOR_INDEX_PATH
+              value: "/shared/index"
+            - name: GROQ_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: logsage-secrets
+                  key: groq-api-key
+            - name: MOCK_LLM
+              value: "false"
+          volumeMounts:
+            - name: vector-index
+              mountPath: /shared
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8002
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+      volumes:
+        - name: vector-index
+          persistentVolumeClaim:
+            claimName: vector-index-pvc
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consumer-service
+  labels:
+    app: consumer-service
+spec:
+  replicas: 2   # safe to scale: Kafka consumer group handles partition rebalancing across replicas
+  selector:
+    matchLabels:
+      app: consumer-service
+  template:
+    metadata:
+      labels:
+        app: consumer-service
+    spec:
+      containers:
+        - name: consumer-service
+          image: logsage-consumer:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: REDIS_HOST
+              value: "redis"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka:9092"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "250m"
