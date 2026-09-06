@@ -11,8 +11,8 @@ import json
 import os
 from kafka import KafkaConsumer
 
-from ..libs.logsage_common.logsage_common.log_store import LogStore
-from .kafka_producer import KAFKA_BOOTSTRAP_SERVERS, LOG_INGESTION_TOPIC
+from libs.logsage_common.logsage_common.log_store import LogStore
+from ingestion_service.app.kafka_producer import KAFKA_BOOTSTRAP_SERVERS, LOG_INGESTION_TOPIC
 
 
 def run_consumer():

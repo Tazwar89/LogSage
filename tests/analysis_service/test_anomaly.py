@@ -4,7 +4,7 @@ Tests for app/anomaly.py
 Uses a lightweight fake VectorStore so these tests run instantly with
 no embedding model or FAISS index required.
 """
-from app.anomaly import is_anomalous
+from services.analysis_service.app.anomaly import is_anomalous
 
 
 class FakeVectorStore:

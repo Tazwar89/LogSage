@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from app.analytics import compute_log_stats, IsolationForestDetector
+from services.analysis_service.app.analytics import compute_log_stats, IsolationForestDetector
 
 
 class TestComputeLogStats:

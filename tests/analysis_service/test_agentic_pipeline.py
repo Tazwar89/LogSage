@@ -11,7 +11,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from app.agentic_pipeline import (
+from services.analysis_service.app.agentic_pipeline import (
     build_diagnostic_graph,
     run_diagnostic_pipeline,
     triage_node,
