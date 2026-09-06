@@ -1,15 +1,32 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: logsage
+  name: ingestion-service
 spec:
   selector:
-    app: logsage
+    app: ingestion-service
   ports:
     - protocol: TCP
       port: 80
-      targetPort: 8000
+      targetPort: 8001
   type: LoadBalancer
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analysis-service
+spec:
+  selector:
+    app: analysis-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8002
+  type: LoadBalancer
+
+# consumer-service has no Service object: it's not an HTTP server, it only
+# connects outward to Kafka and Redis, so nothing needs to route traffic to it.
 
 ---
 apiVersion: v1
@@ -23,4 +40,32 @@ spec:
     - protocol: TCP
       port: 6379
       targetPort: 6379
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+spec:
+  selector:
+    app: zookeeper
+  ports:
+    - protocol: TCP
+      port: 2181
+      targetPort: 2181
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka
+spec:
+  selector:
+    app: kafka
+  ports:
+    - protocol: TCP
+      port: 9092
+      targetPort: 9092
   type: ClusterIP
