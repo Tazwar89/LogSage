@@ -7,7 +7,7 @@ and the file-level batch parser skipping bad lines without crashing.
 import json
 import pytest
 
-from app.parsing import parse_line, parse_file, save_json
+from services.ingestion_service.app.parsing import parse_line, parse_file, save_json
 
 
 class TestParseLine:
