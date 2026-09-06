@@ -4,12 +4,12 @@ Ingestion Service
 Responsibilities:
 - POST /upload/baseline: parses a clean log file, mines templates via Drain3,
   rebuilds the shared FAISS baseline index, and persists it to the shared
-  volume so analysis-service can load it.
+  volume so analysis_service can load it.
 - POST /upload/logs: parses a log file and publishes each line to Kafka for
-  asynchronous processing by analysis-service's consumer.
+  asynchronous processing by analysis_service's consumer.
 
 This service does NOT perform anomaly detection, RAG, or LLM calls -- that's
-analysis-service's job. Keeping this boundary strict is what makes the split
+analysis_service's job. Keeping this boundary strict is what makes the split
 meaningful rather than cosmetic.
 """
 from fastapi import FastAPI, UploadFile
@@ -42,7 +42,7 @@ async def upload_baseline(file: UploadFile):
     templates = get_unique_templates(template_miner)
 
     baseline_store.build_index(templates)
-    baseline_store.save()  # persist to shared volume for analysis-service to load
+    baseline_store.save()  # persist to shared volume for analysis_service to load
 
     return {"baseline_templates": len(templates)}
 

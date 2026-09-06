@@ -2,4 +2,4 @@ fastapi
 uvicorn[standard]
 python-multipart
 drain3
-kafka-python
+kafka-python-ng

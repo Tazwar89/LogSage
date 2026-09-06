@@ -1,5 +1,5 @@
 """
-Tests for services/consumer-service/app/main.py (run_consumer)
+Tests for services/consumer_service/app/main.py (run_consumer)
 
 KafkaConsumer and LogStore are mocked -- verifies per-message handling
 logic, not connectivity to a real broker or Redis instance.
@@ -16,8 +16,8 @@ class TestKafkaConsumer:
         fake_message_2 = MagicMock()
         fake_message_2.value = {"trace_id": "a.log-1", "entry": {"message": "two"}}
 
-        with patch("services.consumer-service.app.main.KafkaConsumer") as mock_consumer_cls, \
-             patch("services.consumer-service.app.main.LogStore") as mock_log_store_cls:
+        with patch("services.consumer_service.app.main.KafkaConsumer") as mock_consumer_cls, \
+             patch("services.consumer_service.app.main.LogStore") as mock_log_store_cls:
 
             mock_consumer_cls.return_value = iter([fake_message_1, fake_message_2])
             mock_log_store = MagicMock()

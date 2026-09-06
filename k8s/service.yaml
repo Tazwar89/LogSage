@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: ingestion-service
+  name: ingestion_service
 spec:
   selector:
-    app: ingestion-service
+    app: ingestion_service
   ports:
     - protocol: TCP
       port: 80
@@ -15,17 +15,17 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: analysis-service
+  name: analysis_service
 spec:
   selector:
-    app: analysis-service
+    app: analysis_service
   ports:
     - protocol: TCP
       port: 80
       targetPort: 8002
   type: LoadBalancer
 
-# consumer-service has no Service object: it's not an HTTP server, it only
+# consumer_service has no Service object: it's not an HTTP server, it only
 # connects outward to Kafka and Redis, so nothing needs to route traffic to it.
 
 ---

@@ -1,7 +1,7 @@
 """
 Single source of truth for Kafka topic names and broker config.
 
-Both ingestion-service (producer) and analysis-service (consumer) import
+Both ingestion_service (producer) and analysis_service (consumer) import
 from here, so a topic rename only ever happens in one place.
 """
 import os

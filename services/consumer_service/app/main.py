@@ -2,15 +2,15 @@
 Consumer Service
 
 A standalone, non-HTTP microservice. Its only job is consuming from the
-Kafka log-ingestion topic (published by ingestion-service) and writing
-each entry into Redis (read by analysis-service).
+Kafka log-ingestion topic (published by ingestion_service) and writing
+each entry into Redis (read by analysis_service).
 
-Previously this ran as a background thread inside analysis-service's
+Previously this ran as a background thread inside analysis_service's
 FastAPI process. Splitting it into its own container means:
-- It can be scaled independently of analysis-service's HTTP traffic
+- It can be scaled independently of analysis_service's HTTP traffic
   (e.g. run 3 consumer replicas during a large batch ingest, 1 API replica).
 - A crash or restart here never takes down the /analyze or /stats endpoints.
-- analysis-service's FastAPI process is no longer running a background
+- analysis_service's FastAPI process is no longer running a background
   thread outside the request/response lifecycle, which was already an
   acknowledged compromise.
 
@@ -29,7 +29,7 @@ from libs.logsage_common.logsage_common.kafka_config import (
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-logger = logging.getLogger("consumer-service")
+logger = logging.getLogger("consumer_service")
 
 
 def run_consumer():

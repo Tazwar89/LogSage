@@ -32,14 +32,14 @@ jobs:
       - name: Run logsage_common tests
         run: pytest tests/logsage_common -v
 
-      - name: Run ingestion-service tests
-        run: pytest tests/ingestion-service -v
+      - name: Run ingestion_service tests
+        run: pytest tests/ingestion_service -v
 
-      - name: Run analysis-service tests
-        run: pytest tests/analysis-service -v
+      - name: Run analysis_service tests
+        run: pytest tests/analysis_service -v
 
-      - name: Run consumer-service tests
-        run: pytest tests/consumer-service -v
+      - name: Run consumer_service tests
+        run: pytest tests/consumer_service -v
 
       - name: Lint (non-blocking)
         run: |
