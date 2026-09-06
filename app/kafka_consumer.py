@@ -11,7 +11,7 @@ import json
 import os
 from kafka import KafkaConsumer
 
-from .log_store import LogStore
+from ..libs.logsage_common.logsage_common.log_store import LogStore
 from .kafka_producer import KAFKA_BOOTSTRAP_SERVERS, LOG_INGESTION_TOPIC
 
 

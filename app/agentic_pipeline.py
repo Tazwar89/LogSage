@@ -23,7 +23,7 @@ from typing import TypedDict, List, Dict, Any
 from langgraph.graph import StateGraph, END
 from openai import OpenAI
 
-from .redact import redact
+from ..libs.logsage_common.logsage_common.redact import redact
 
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 

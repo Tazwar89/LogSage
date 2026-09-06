@@ -8,8 +8,8 @@ logic, not the embedding model itself.
 import numpy as np
 import pytest
 
-from app import vector_store as vector_store_module
-from app.vector_store import VectorStore
+from libs.logsage_common.logsage_common import vector_store as vector_store_module
+from libs.logsage_common.logsage_common.vector_store import VectorStore
 
 
 class FakeSentenceTransformer:
