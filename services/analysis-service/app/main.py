@@ -22,8 +22,8 @@ from .rag import load_knowledge_base, build_kb_index, retrieve_context
 from .agentic_pipeline import run_diagnostic_pipeline
 from .analytics import compute_log_stats
 
-from ..libs.logsage_common.logsage_common.vector_store import VectorStore
-from ..libs.logsage_common.logsage_common.log_store import LogStore
+from logsage_common.vector_store import VectorStore
+from logsage_common.log_store import LogStore
 
 
 baseline_store = VectorStore()
