@@ -1,0 +1,20 @@
+# Shared base image: installs uv and the logsage_common package once.
+# All three services extend this instead of repeating the same two steps
+# independently, cutting a clean build from 3x(uv install + shared-lib
+# install) down to 1x.
+#
+# Build once, tag it, then each service's Dockerfile does:
+#   FROM logsage-base:latest
+#
+# Rebuild this whenever libs/logsage_common changes:
+#   docker build -f Dockerfile.base -t logsage-base:latest .
+FROM --platform=$BUILDPLATFORM python:3.11-slim
+WORKDIR /app
+
+RUN pip install --no-cache-dir uv
+
+ENV PIP_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cpu"
+ENV UV_EXTRA_INDEX_URL="https://download.pytorch.org/whl/cpu"
+
+COPY libs/logsage_common /app/libs/logsage_common
+RUN uv pip install --system --no-cache -e /app/libs/logsage_common

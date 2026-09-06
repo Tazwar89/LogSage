@@ -1,3 +1,16 @@
 pytest
 fakeredis
 ruff
+
+# Needed to import/collect test modules across all services --
+# tests exercise real service code, which imports these directly.
+redis
+faiss-cpu
+sentence-transformers
+numpy
+kafka-python
+langgraph
+langchain-core
+openai
+pandas
+scikit-learn
