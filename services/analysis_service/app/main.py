@@ -22,8 +22,8 @@ from .rag import load_knowledge_base, build_kb_index, retrieve_context
 from .agentic_pipeline import run_diagnostic_pipeline
 from .analytics import compute_log_stats
 
-from logsage_common.vector_store import VectorStore
-from logsage_common.log_store import LogStore
+from libs.logsage_common.logsage_common.vector_store import VectorStore
+from libs.logsage_common.logsage_common.log_store import LogStore
 
 
 baseline_store = VectorStore()
@@ -51,6 +51,7 @@ def health():
 @app.get("/analyze/{trace_id}")
 def analyze(trace_id: str):
     entry = log_store.get(trace_id)
+
     if not entry:
         raise HTTPException(status_code=404, detail="trace_id not found")
 
@@ -58,6 +59,7 @@ def analyze(trace_id: str):
     # the latest /upload/baseline call from ingestion-service, without
     # needing any direct coupling between the two services.
     loaded = baseline_store.load()
+
     if not loaded:
         raise HTTPException(
             status_code=503,
@@ -70,6 +72,7 @@ def analyze(trace_id: str):
         return {"trace_id": trace_id, "anomalous": False, "nearest_match": nearest}
 
     result = run_diagnostic_pipeline(entry["message"], kb_store, kb_lookup)
+
     return {"trace_id": trace_id, "anomalous": True, **result}
 
 
@@ -80,5 +83,9 @@ def list_logs():
 
 @app.get("/stats")
 def stats():
-    entries = [log_store.get(tid) for tid in log_store.list_trace_ids()]
+    entries: list[dict] = [
+        entry for tid in log_store.list_trace_ids()
+        if (entry := log_store.get(tid.decode("utf-8") if isinstance(tid, bytes) else tid)) is not None
+    ]
+
     return compute_log_stats(entries)

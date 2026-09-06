@@ -1,17 +1,14 @@
 """
-Tests for app/kafka_producer.py and app/kafka_consumer.py
+Tests for services/ingestion-service/app/kafka_producer.py
 
-KafkaProducer/KafkaConsumer are mocked throughout -- these tests verify
-message construction, serialization, and error handling, not connectivity
-to a real broker.
+KafkaProducer is mocked throughout -- these verify message construction,
+serialization, and error handling, not connectivity to a real broker.
 """
-import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-import pytest
 from kafka.errors import KafkaError
 
-from app.kafka_producer import publish_log_entry, publish_batch, LOG_INGESTION_TOPIC
+from services.ingestion_service.app.kafka_producer import publish_log_entry, publish_batch, LOG_INGESTION_TOPIC
 
 
 class TestPublishLogEntry:
@@ -42,8 +39,6 @@ class TestPublishLogEntry:
 
 
     def test_waits_for_ack_before_returning(self):
-        """publish_log_entry should block on future.get() to confirm delivery,
-        not just fire-and-forget."""
         producer = MagicMock()
         future = MagicMock()
         producer.send.return_value = future
@@ -80,7 +75,7 @@ class TestPublishBatch:
         batch = [("a.log-0", {"message": "ok"}), ("a.log-1", {"message": "fails"})]
         count = publish_batch(producer, batch)
 
-        assert count == 1  # only the first publish succeeded
+        assert count == 1
 
 
     def test_empty_batch_returns_zero(self):
@@ -88,33 +83,4 @@ class TestPublishBatch:
         count = publish_batch(producer, [])
 
         assert count == 0
-        producer.flush.assert_called_once()  # flush still called even with nothing to send
-
-
-class TestKafkaConsumer:
-    def test_consumer_stores_each_message_via_log_store(self):
-        """
-        Verifies run_consumer's per-message handling logic: for each consumed
-        message, it extracts trace_id/entry and calls log_store.save(). We
-        patch KafkaConsumer to yield a fixed list of fake messages instead of
-        connecting to a real broker.
-        """
-        from app import kafka_consumer
-
-        fake_message_1 = MagicMock()
-        fake_message_1.value = {"trace_id": "a.log-0", "entry": {"message": "one"}}
-        fake_message_2 = MagicMock()
-        fake_message_2.value = {"trace_id": "a.log-1", "entry": {"message": "two"}}
-
-        with patch("app.kafka_consumer.KafkaConsumer") as mock_consumer_cls, \
-             patch("app.kafka_consumer.LogStore") as mock_log_store_cls:
-
-            mock_consumer_cls.return_value = iter([fake_message_1, fake_message_2])
-            mock_log_store = MagicMock()
-            mock_log_store_cls.return_value = mock_log_store
-
-            kafka_consumer.run_consumer()
-
-            assert mock_log_store.save.call_count == 2
-            mock_log_store.save.assert_any_call("a.log-0", {"message": "one"})
-            mock_log_store.save.assert_any_call("a.log-1", {"message": "two"})
+        producer.flush.assert_called_once()

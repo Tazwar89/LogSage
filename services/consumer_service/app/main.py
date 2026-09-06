@@ -21,8 +21,8 @@ import logging
 
 from kafka import KafkaConsumer
 
-from logsage_common.log_store import LogStore
-from logsage_common.kafka_config import (
+from libs.logsage_common.logsage_common.log_store import LogStore
+from libs.logsage_common.logsage_common.kafka_config import (
     KAFKA_BOOTSTRAP_SERVERS,
     LOG_INGESTION_TOPIC,
     CONSUMER_GROUP_ID,
@@ -38,7 +38,7 @@ def run_consumer():
     consumer = KafkaConsumer(
         LOG_INGESTION_TOPIC,
         bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-        value_deserializer=lambda v: json.loads(v.decode("utf-8")),
+        value_deserializer=lambda v: json.loads(v.decode("utf-8")) if v is not None else None,
         auto_offset_reset="earliest",
         group_id=CONSUMER_GROUP_ID,
     )

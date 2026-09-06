@@ -18,7 +18,7 @@ from .parsing import parse_line
 from .embedding import build_template_miner, deduplicate_logs, get_unique_templates
 from .kafka_producer import get_producer, publish_batch
 
-from logsage_common.vector_store import VectorStore
+from libs.logsage_common.logsage_common.vector_store import VectorStore
 
 app = FastAPI(title="LogSage Ingestion Service")
 
