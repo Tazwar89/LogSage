@@ -26,32 +26,52 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
-  logsage:
-    build: .
-    image: logsage:latest
+  ingestion-service:
+    build:
+      context: .
+      dockerfile: services/ingestion-service/Dockerfile
     ports:
-      - "8000:8000"
+      - "8001:8001"
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - VECTOR_INDEX_PATH=/shared/index
+    volumes:
+      - vector-index:/shared
+    depends_on:
+      kafka:
+        condition: service_started
+
+  analysis-service:
+    build:
+      context: .
+      dockerfile: services/analysis-service/Dockerfile
+    ports:
+      - "8002:8002"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - VECTOR_INDEX_PATH=/shared/index
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - MOCK_LLM=${MOCK_LLM:-false}
+    volumes:
+      - vector-index:/shared
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  consumer-service:
+    build:
+      context: .
+      dockerfile: services/consumer-service/Dockerfile
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-      - GROQ_API_KEY=${GROQ_API_KEY}
-      - MOCK_LLM=${MOCK_LLM:-false}
     depends_on:
       redis:
         condition: service_healthy
       kafka:
         condition: service_started
 
-  ingestion-worker:
-    image: logsage:latest   # reuses the image built above, no separate build
-    command: python -m app.kafka_consumer
-    environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-    depends_on:
-      redis:
-        condition: service_healthy
-      kafka:
-        condition: service_started
+volumes:
+  vector-index:

@@ -6,7 +6,7 @@ Uses fakeredis so these tests run offline with no real Redis server.
 import pytest
 import fakeredis
 
-from app.log_store import LogStore
+from libs.logsage_common.logsage_common.log_store import LogStore
 
 
 @pytest.fixture
