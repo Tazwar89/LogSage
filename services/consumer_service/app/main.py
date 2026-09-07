@@ -38,7 +38,7 @@ def connect_with_retry(max_retries: int = 10, initial_delay: float = 2.0) -> Kaf
             consumer = KafkaConsumer(
                 LOG_INGESTION_TOPIC,
                 bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-                value_deserializer=lambda v: json.loads(v.decode("utf-8")),
+                value_deserializer=lambda v: json.loads(v.decode("utf-8")) if v is not None else None,
                 auto_offset_reset="earliest",
                 group_id=CONSUMER_GROUP_ID,
             )
