@@ -23,9 +23,10 @@ from typing import TypedDict, List, Dict, Any
 from langgraph.graph import StateGraph, END
 from openai import OpenAI
 
-from libs.logsage_common.logsage_common.redact import redact
+from logsage_common.redact import redact
 
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
+MOCK_LLM = os.getenv("MOCK_LLM", "false").lower() == "true"
 
 
 class DiagnosticState(TypedDict):
@@ -43,22 +44,43 @@ def _get_client():
     )
 
 
-def triage_node(state: DiagnosticState) -> DiagnosticState:
-    """Node 1: redact sensitive data, extract key entities from the log line."""
-    redacted = redact(state["raw_log"])
+def _call_llm_json(prompt: str, mock_response: dict) -> dict:
+    """
+    Wraps every LLM call in this pipeline. When MOCK_LLM=true (set in CI to
+    avoid spending real API credits on every push, or locally when testing
+    without a key), returns a fixed canned response instead of calling out
+    to Groq/OpenAI.
+    """
+    if MOCK_LLM:
+        return mock_response
 
     client = _get_client()
-    prompt = f"""Extract key entities from this system log line. Respond ONLY in JSON
-with keys: component, error_keywords (list), severity_guess (low/medium/high).
-
-Log line: {redacted}"""
-
     response = client.chat.completions.create(
         model=GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"},
     )
-    entities = json.loads(response.choices[0].message.content or "{}")
+
+    return json.loads(response.choices[0].message.content or "{}")
+
+
+def triage_node(state: DiagnosticState) -> DiagnosticState:
+    """Node 1: redact sensitive data, extract key entities from the log line."""
+    redacted = redact(state["raw_log"])
+
+    prompt = f"""Extract key entities from this system log line. Respond ONLY in JSON
+with keys: component, error_keywords (list), severity_guess (low/medium/high).
+
+Log line: {redacted}"""
+
+    entities = _call_llm_json(
+        prompt,
+        mock_response={
+            "component": "mock-component",
+            "error_keywords": ["mock-error"],
+            "severity_guess": "medium",
+        },
+    )
 
     return {**state, "redacted_log": redacted, "entities": entities}
 
@@ -74,8 +96,6 @@ def research_node(state: DiagnosticState, kb_store, kb_lookup) -> DiagnosticStat
 
 def report_node(state: DiagnosticState) -> DiagnosticState:
     """Node 3: synthesize triage + research into a final diagnosis."""
-    client = _get_client()
-
     context_str = "\n".join(
         f"- Issue: {c['issue']} | Fix: {c['fix']}" for c in state["retrieved_context"]
     ) or "No related historical issues found."
@@ -89,12 +109,14 @@ Related historical issues/fixes:
 
 Respond ONLY in JSON with keys: root_cause, suggested_fix, confidence (0-1)."""
 
-    response = client.chat.completions.create(
-        model=GROQ_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        response_format={"type": "json_object"},
+    analysis = _call_llm_json(
+        prompt,
+        mock_response={
+            "root_cause": "mock-root-cause (MOCK_LLM=true)",
+            "suggested_fix": "mock-suggested-fix (MOCK_LLM=true)",
+            "confidence": 0.5,
+        },
     )
-    analysis = json.loads(response.choices[0].message.content or "{}")
 
     return {**state, "final_analysis": analysis}
 
