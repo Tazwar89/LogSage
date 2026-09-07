@@ -11,29 +11,67 @@ log files no longer block the HTTP request while every line is written to
 Redis one by one.
 """
 import json
-import os
+import logging
+import time
+
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 
-KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
-LOG_INGESTION_TOPIC = "logsage.logs.raw"
+from logsage_common.kafka_config import KAFKA_BOOTSTRAP_SERVERS, LOG_INGESTION_TOPIC
+
+logger = logging.getLogger("ingestion-service")
 
 
-def get_producer() -> KafkaProducer:
-    return KafkaProducer(
-        bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-        retries=3,
-    )
+def get_producer(max_retries: int = 10, initial_delay: float = 2.0) -> KafkaProducer:
+    """
+    Connects to Kafka with exponential backoff instead of failing immediately.
+
+    Compose's `depends_on: condition: service_started` only waits for the
+    Kafka *container* to start, not for the broker to finish loading and
+    accept connections -- which can take several seconds after container
+    start. Constructing KafkaProducer eagerly with no retry meant any
+    timing mismatch (or a transient Kafka restart) permanently crashed this
+    service instead of waiting it out.
+
+    Catches the broad KafkaError base class rather than a specific subclass
+    like NoBrokersAvailable, since that subclass's exact name/availability
+    has varied across kafka-python versions/forks -- KafkaError is the
+    stable base every connection-related exception inherits from.
+    """
+    delay = initial_delay
+    last_error = None
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            producer = KafkaProducer(
+                bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+                value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+                retries=3,
+            )
+            logger.info(f"Connected to Kafka at {KAFKA_BOOTSTRAP_SERVERS} on attempt {attempt}")
+
+            return producer
+
+        except KafkaError as e:
+            last_error = e
+            logger.warning(
+                f"Kafka not available yet (attempt {attempt}/{max_retries}): {e}, "
+                f"retrying in {delay:.0f}s..."
+            )
+            time.sleep(delay)
+            delay = min(delay * 2, 30)  # cap backoff at 30s
+
+    raise RuntimeError(
+        f"Could not connect to Kafka at {KAFKA_BOOTSTRAP_SERVERS} after {max_retries} attempts"
+    ) from last_error
 
 
 def publish_log_entry(producer: KafkaProducer, trace_id: str, entry: dict) -> bool:
-    """Publishes a single parsed log entry to the ingestion topic. Returns True on success."""
     payload = {"trace_id": trace_id, "entry": entry}
 
     try:
         future = producer.send(LOG_INGESTION_TOPIC, value=payload)
-        future.get(timeout=10)  # block until ack, so caller knows if publish failed
+        future.get(timeout=10)
 
         return True
 
@@ -41,8 +79,7 @@ def publish_log_entry(producer: KafkaProducer, trace_id: str, entry: dict) -> bo
         return False
 
 
-def publish_batch(producer: KafkaProducer, entries_with_ids: list[tuple[str, dict]]) -> int:
-    """Publishes a batch of (trace_id, entry) pairs. Returns count of successful publishes."""
+def publish_batch(producer: KafkaProducer, entries_with_ids: list) -> int:
     published = 0
 
     for trace_id, entry in entries_with_ids:

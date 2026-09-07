@@ -25,6 +25,18 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      # `service_started` (the previous condition) only confirms the container
+      # process launched, not that the broker has finished loading and can
+      # actually accept connections -- which took several real seconds after
+      # container start (visible in the container logs as ~50 partition-log
+      # recovery steps). This probes the actual broker API, matching what
+      # ingestion_service/consumer_service's KafkaProducer/KafkaConsumer need.
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 5s
+      timeout: 10s
+      retries: 15
+      start_period: 20s
 
   ingestion_service:
     build:
@@ -39,7 +51,7 @@ services:
       - vector-index:/shared
     depends_on:
       kafka:
-        condition: service_started
+        condition: service_healthy
 
   analysis_service:
     build:
@@ -71,7 +83,7 @@ services:
       redis:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   vector-index:

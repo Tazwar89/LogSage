@@ -6,8 +6,17 @@ setup(
     packages=find_packages(),
     install_requires=[
         "redis",
-        "faiss-cpu",
-        "sentence-transformers",
-        "numpy",
     ],
+    extras_require={
+        # Only needed by services that actually build/query the FAISS index
+        # (ingestion_service, analysis_service). consumer_service only uses
+        # LogStore/redact and never imports vector_store, so it installs
+        # logsage_common WITHOUT this extra -- skipping the ~700MB+
+        # torch/sentence-transformers download chain entirely.
+        "vector": [
+            "faiss-cpu",
+            "sentence-transformers",
+            "numpy",
+        ],
+    },
 )
