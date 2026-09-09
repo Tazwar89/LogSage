@@ -108,8 +108,8 @@ jobs:
 
       - name: Run the full curl smoke-test flow
         run: |
-          curl -f -X POST http://localhost:8001/upload/baseline -F "file=@HDFS_2k.log"
-          curl -f -X POST http://localhost:8001/upload/logs -F "file=@test_anomalous.log"
+          curl -f -X POST http://localhost:8001/upload/baseline -F "file=@services/analysis_service/data/HDFS_2k.log"
+          curl -f -X POST http://localhost:8001/upload/logs -F "file=@services/analysis_service/data/test_anomalous.log"
           sleep 5
           curl -f http://localhost:8002/logs
           curl -f http://localhost:8002/analyze/test_anomalous.log-0
