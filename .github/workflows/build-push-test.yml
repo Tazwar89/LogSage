@@ -84,10 +84,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build base image locally for this runner
-        run: docker build -f Dockerfile.base -t logsage-base:latest .
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull base image
+        run: docker pull ghcr.io/tazwar89/logsage/base:latest
 
       - name: Start the full stack
         run: docker compose up -d --build
