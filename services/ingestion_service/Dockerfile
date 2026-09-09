@@ -1,4 +1,4 @@
-FROM logsage-base:latest
+FROM ghcr.io/tazwar89/logsage/base:latest
 WORKDIR /app
 
 COPY services/ingestion_service/requirements.txt .
