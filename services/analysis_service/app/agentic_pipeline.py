@@ -24,7 +24,7 @@ from openai import OpenAI
 
 from logsage_common.redact import redact
 
-GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
+LLM_MODEL = os.getenv("LLM_MODEL", "openai/gpt-oss-20b")
 MOCK_LLM = os.getenv("MOCK_LLM", "false").lower() == "true"
 
 
@@ -55,7 +55,7 @@ def _call_llm_json(prompt: str, mock_response: dict) -> dict:
 
     client = _get_client()
     response = client.chat.completions.create(
-        model=GROQ_MODEL,
+        model=LLM_MODEL,
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"},
     )
