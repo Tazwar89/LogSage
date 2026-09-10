@@ -1,6 +1,7 @@
 import os, json
 from openai import OpenAI
-from libs.logsage_common.logsage_common.redact import redact
+
+from logsage_common.redact import redact
 
 client = OpenAI(
     api_key=os.environ["GROQ_API_KEY"],
