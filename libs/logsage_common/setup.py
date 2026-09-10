@@ -19,8 +19,7 @@ setup(
             "pydantic>=2.5,<2.10",
             "faiss-cpu",
             "sentence-transformers",
-            "numpy",
-            "qdrant-client"
+            "numpy"
         ],
     },
 )
