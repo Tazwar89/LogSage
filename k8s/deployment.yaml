@@ -100,6 +100,55 @@ spec:
 
 ---
 apiVersion: apps/v1
+kind: PersistentVolumeClaim
+metadata:
+  name: qdrant-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce   # only Qdrant itself writes to its own storage
+  resources:
+    requests:
+      storage: 512Mi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qdrant
+  labels:
+    app: qdrant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qdrant
+  template:
+    metadata:
+      labels:
+        app: qdrant
+    spec:
+      containers:
+        - name: qdrant
+          image: qdrant/qdrant:latest
+          ports:
+            - containerPort: 6333
+          volumeMounts:
+            - name: qdrant-storage
+              mountPath: /qdrant/storage
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "100m"
+            limits:
+              memory: "512Mi"
+              cpu: "250m"
+      volumes:
+        - name: qdrant-storage
+          persistentVolumeClaim:
+            claimName: qdrant-pvc
+
+---
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ingestion_service
@@ -126,6 +175,10 @@ spec:
               value: "kafka:9092"
             - name: VECTOR_INDEX_PATH
               value: "/shared/index"
+            - name: VECTOR_BACKEND
+              value: "qdrant"   # switch to "faiss" to fall back
+            - name: QDRANT_URL
+              value: "http://qdrant:6333"
           volumeMounts:
             - name: vector-index
               mountPath: /shared
