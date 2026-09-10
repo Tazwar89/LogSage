@@ -45,6 +45,8 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
+      qdrant:
+        condition: service_healthy
 
   analysis_service:
     build:
@@ -62,6 +64,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      qdrant:
+        condition: service_healthy
 
   consumer_service:
     build:
@@ -77,7 +81,7 @@ services:
       kafka:
         condition: service_healthy
 
-qdrant:
-    image: qdrant/qdrant:latest
-    ports:
-      - "6333:6333"
+  qdrant:
+      image: qdrant/qdrant:latest
+      ports:
+        - "6333:6333"
