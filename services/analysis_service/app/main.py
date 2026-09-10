@@ -58,9 +58,10 @@ def analyze(trace_id: str):
     # Reload the baseline index fresh on each request so we always reflect
     # the latest /upload/baseline call from ingestion_service, without
     # needing any direct coupling between the two services.
-    loaded = baseline_store.load()
+    try:
+        loaded = baseline_store.load()
 
-    if not loaded:
+    except (FileNotFoundError, RuntimeError):
         raise HTTPException(
             status_code=503,
             detail="No baseline index available yet -- call ingestion_service's /upload/baseline first",

@@ -1,9 +1,11 @@
+import os
 import faiss
 import numpy as np
 import pickle
 from sentence_transformers import SentenceTransformer
 
 MODEL_NAME = "all-MiniLM-L6-v2"
+DEFAULT_INDEX_PATH = os.environ.get("VECTOR_INDEX_PATH", "index")
 
 class VectorStore:
     def __init__(self, dim=384):
@@ -43,14 +45,16 @@ class VectorStore:
         return results
 
 
-    def save(self, path="index"):
+    def save(self, path=None):
+        path = path or DEFAULT_INDEX_PATH
         faiss.write_index(self.index, f"{path}.faiss")
 
         with open(f"{path}_meta.pkl", "wb") as f:
             pickle.dump(self.id_map, f)
 
 
-    def load(self, path="index"):
+    def load(self, path=None):
+        path = path or DEFAULT_INDEX_PATH
         self.index = faiss.read_index(f"{path}.faiss")
 
         with open(f"{path}_meta.pkl", "rb") as f:
