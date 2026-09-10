@@ -12,7 +12,7 @@ import os
 from kafka import KafkaConsumer
 
 from logsage_common.log_store import LogStore
-from ingestion_service.app.kafka_producer import KAFKA_BOOTSTRAP_SERVERS, LOG_INGESTION_TOPIC
+from logsage_common.kafka_config import KAFKA_BOOTSTRAP_SERVERS, LOG_INGESTION_TOPIC
 
 
 def run_consumer():
