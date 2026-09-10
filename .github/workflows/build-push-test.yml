@@ -51,7 +51,7 @@ jobs:
           context: .
           file: services/ingestion_service/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/ingestion-service:latest
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/ingestion_service:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -61,7 +61,7 @@ jobs:
           context: .
           file: services/analysis_service/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/analysis-service:latest
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/analysis_service:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -71,7 +71,7 @@ jobs:
           context: .
           file: services/consumer_service/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/consumer-service:latest
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/consumer_service:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

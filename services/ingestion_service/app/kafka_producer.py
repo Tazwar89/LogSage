@@ -19,7 +19,7 @@ from kafka.errors import KafkaError
 
 from logsage_common.kafka_config import KAFKA_BOOTSTRAP_SERVERS, LOG_INGESTION_TOPIC
 
-logger = logging.getLogger("ingestion-service")
+logger = logging.getLogger("ingestion_service")
 
 
 def get_producer(max_retries: int = 10, initial_delay: float = 2.0) -> KafkaProducer:

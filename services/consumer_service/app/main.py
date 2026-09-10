@@ -20,7 +20,7 @@ from logsage_common.kafka_config import (
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-logger = logging.getLogger("consumer-service")
+logger = logging.getLogger("consumer_service")
 
 
 def connect_with_retry(max_retries: int = 10, initial_delay: float = 2.0) -> KafkaConsumer:
