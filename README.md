@@ -199,13 +199,16 @@ All external dependencies (embedding model, LLM API, Kafka broker, Redis server)
 `k8s/deployment.yaml` and `k8s/service.yaml` mirror the Compose topology: one Deployment per service plus Redis/Kafka/Zookeeper, and a `PersistentVolumeClaim` (`vector-index-pvc`) replacing the Compose named volume for the shared FAISS index.
 
 ```bash
+kubectl create secret docker-registry ghcr-secret \
+  --docker-server=ghcr.io --docker-username=Tazwar89 \
+  --docker-password=<PAT> --docker-email=<email>
 kubectl create secret generic logsage-secrets --from-literal=groq-api-key=your_key_here
 kubectl apply -f k8s/
 ```
 
 Two things worth knowing before trying this on a local cluster:
 - The PVC requests `ReadWriteMany` access (both ingestion and analysis need concurrent access), which most local provisioners (minikube's default, kind) don't support out of the box — see the comments in `k8s/deployment.yaml` for workarounds.
-- You'll need to build and load three separate images (`logsage-ingestion`, `logsage-analysis`, `logsage-consumer`) into your cluster; they aren't published to a registry.
+- All three service images plus the shared base are published to GHCR by CI on every push to main; k8s/deployment.yaml pulls them directly, so no local image build/load step is needed for cluster deployment.
 
 ## Known limitations
 
@@ -217,7 +220,6 @@ Two things worth knowing before trying this on a local cluster:
 
 ## Possible extensions
 
-- Publish `logsage-base` and the three service images to a container registry for a genuinely reproducible Kubernetes deployment.
 - LLM-as-judge evaluation harness to score diagnosis quality against a labeled set.
 - Swap the FAISS/shared-volume approach for a dedicated vector database service (e.g. Qdrant or Chroma server), removing the `ReadWriteMany` constraint entirely.
 - Configurable model/provider via environment variable instead of hardcoded in `agentic_pipeline.py`.

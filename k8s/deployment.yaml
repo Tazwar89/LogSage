@@ -117,8 +117,8 @@ spec:
     spec:
       containers:
         - name: ingestion_service
-          image: logsage-ingestion:latest
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/tazwar89/logsage/ingestion_service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8001
           env:
@@ -166,8 +166,8 @@ spec:
     spec:
       containers:
         - name: analysis_service
-          image: logsage-analysis:latest
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/tazwar89/logsage/analysis_service:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8002
           env:
@@ -224,8 +224,8 @@ spec:
     spec:
       containers:
         - name: consumer_service
-          image: logsage-consumer:latest
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/tazwar89/logsage/consumer_service:latest
+          imagePullPolicy: Always
           env:
             - name: REDIS_HOST
               value: "redis"
