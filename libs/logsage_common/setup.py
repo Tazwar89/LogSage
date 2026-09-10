@@ -17,6 +17,7 @@ setup(
             "faiss-cpu",
             "sentence-transformers",
             "numpy",
+            "qdrant-client"
         ],
     },
 )

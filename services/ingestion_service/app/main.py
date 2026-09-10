@@ -14,12 +14,12 @@ from .parsing import parse_line
 from .embedding import build_template_miner, deduplicate_logs, get_unique_templates
 from .kafka_producer import get_producer, publish_batch
 
-from logsage_common.vector_store import VectorStore
+from logsage_common.vector_store_qdrant import QdrantVectorStore
 
 app = FastAPI(title="LogSage Ingestion Service")
 
 template_miner = build_template_miner()
-baseline_store = VectorStore()
+baseline_store = QdrantVectorStore(collection_name="baseline")
 producer = get_producer()  # now retries with backoff instead of crashing immediately
 
 

@@ -22,12 +22,12 @@ from .rag import load_knowledge_base, build_kb_index, retrieve_context
 from .agentic_pipeline import run_diagnostic_pipeline
 from .analytics import compute_log_stats
 
-from logsage_common.vector_store import VectorStore
+from logsage_common.vector_store_qdrant import QdrantVectorStore
 from logsage_common.log_store import LogStore
 
 
-baseline_store = VectorStore()
-kb_store = VectorStore()
+baseline_store = QdrantVectorStore(collection_name="baseline")
+kb_store = QdrantVectorStore(collection_name="knowledge_base")
 kb_lookup = {}
 log_store = LogStore()
 
