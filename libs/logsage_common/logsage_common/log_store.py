@@ -14,12 +14,21 @@ import redis
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
 REDIS_DB = int(os.getenv("REDIS_DB", 0))
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD")
+REDIS_TLS = os.getenv("REDIS_TLS", "false").lower() == "true"
 
 LOG_INDEX_KEY = "log:index"
 
 
 def get_redis_client():
-    return redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
+    return redis.Redis(
+        host=REDIS_HOST,
+        port=REDIS_PORT,
+        db=REDIS_DB,
+        password=REDIS_PASSWORD,
+        ssl=REDIS_TLS,
+        decode_responses=True,
+    )
 
 
 class LogStore:
