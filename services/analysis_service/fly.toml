@@ -8,8 +8,6 @@ primary_region = "yyz"
   VECTOR_BACKEND = "qdrant"
   QDRANT_URL = "http://logsage-qdrant.internal:6333"
   VECTOR_INDEX_PATH = "/shared/index"
-  REDIS_HOST = "your-upstash-redis-host"
-  REDIS_PORT = "6379"
 
 [[mounts]]
   source = "vector_index"

@@ -4,10 +4,6 @@ primary_region = "yyz"
 [build]
   dockerfile = "Dockerfile"
 
-[env]
-  REDIS_HOST = "your-upstash-redis-host"
-  REDIS_PORT = "6379"
-
 [[vm]]
   memory = "256mb"
   cpu_kind = "shared"
