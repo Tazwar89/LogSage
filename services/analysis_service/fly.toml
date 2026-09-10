@@ -1,14 +1,19 @@
 app = "logsage-analysis"
-primary_region = "yyz"   # Toronto, closest to you
+primary_region = "yyz"
 
 [build]
   dockerfile = "Dockerfile"
 
 [env]
-  QDRANT_URL = "http://logsage-qdrant.internal:6333"
   VECTOR_BACKEND = "qdrant"
+  QDRANT_URL = "http://logsage-qdrant.internal:6333"
+  VECTOR_INDEX_PATH = "/shared/index"
   REDIS_HOST = "your-upstash-redis-host"
   REDIS_PORT = "6379"
+
+[[mounts]]
+  source = "vector_index"
+  destination = "/shared"
 
 [[services]]
   internal_port = 8002
@@ -24,12 +29,3 @@ primary_region = "yyz"   # Toronto, closest to you
   memory = "512mb"
   cpu_kind = "shared"
   cpus = 1
-
-[[mounts]]
-  source = "vector_index"
-  destination = "/shared"
-
-[env]
-  VECTOR_INDEX_PATH = "/shared/index"
-  VECTOR_BACKEND = "qdrant"
-  QDRANT_URL = "http://logsage-qdrant.internal:6333"
