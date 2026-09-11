@@ -1,5 +1,4 @@
-import re
-import json
+import re, json
 
 LOG_PATTERN = re.compile(
     r'^(?P<date>\d+)\s+(?P<time>\d+)\s+(?P<pid>\d+)\s+(?P<level>\w+)\s+(?P<component>[\w\.\$]+):\s+(?P<message>.*)$'

@@ -8,7 +8,6 @@ LogStore -- decoupled from the FastAPI request/response cycle.
 Run standalone with: python -m app.kafka_consumer
 """
 import json
-import os
 from typing import Any, cast
 from kafka import KafkaConsumer
 

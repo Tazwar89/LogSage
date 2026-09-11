@@ -7,8 +7,7 @@ instantiate. Unlike the FAISS version, there is no local index file: both
 services talk to the same Qdrant server, so save()/load() become no-ops --
 writes are visible to readers immediately, with no shared PVC/volume needed.
 """
-import os
-import uuid
+import os, uuid
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from qdrant_client.http.exceptions import UnexpectedResponse

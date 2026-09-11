@@ -5,9 +5,7 @@ A standalone, non-HTTP microservice. Its only job is consuming from the
 Kafka log-ingestion topic (published by ingestion_service) and writing
 each entry into Redis (read by analysis_service).
 """
-import json
-import logging
-import time
+import json, logging, time
 
 from kafka import KafkaConsumer
 from kafka.errors import KafkaError

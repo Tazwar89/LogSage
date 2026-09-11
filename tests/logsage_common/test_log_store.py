@@ -3,8 +3,7 @@ Tests for app/log_store.py
 
 Uses fakeredis so these tests run offline with no real Redis server.
 """
-import pytest
-import fakeredis
+import pytest, fakeredis
 
 from logsage_common.log_store import LogStore
 
