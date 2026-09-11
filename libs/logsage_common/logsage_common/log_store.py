@@ -7,9 +7,7 @@ key `log:{trace_id}`, with a separate set `log:index` tracking all trace_ids
 so /logs can list them without a Redis KEYS scan (which is discouraged in
 production Redis usage).
 """
-import json
-import os
-import redis
+import os, json, redis
 
 REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
 REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))

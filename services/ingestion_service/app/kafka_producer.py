@@ -10,9 +10,7 @@ This decouples ingestion throughput from analysis/storage latency -- large
 log files no longer block the HTTP request while every line is written to
 Redis one by one.
 """
-import json
-import logging
-import time
+import json, logging, time
 from typing import Any, cast
 
 from kafka import KafkaProducer
