@@ -4,6 +4,9 @@ primary_region = "yyz"
 [build]
   image = "qdrant/qdrant:latest"
 
+[env]
+  QDRANT__SERVICE__HOST = "::"
+
 [[mounts]]
   source = "qdrant_data"
   destination = "/qdrant/storage"
