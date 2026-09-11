@@ -1,23 +1,3 @@
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: vector-index-pvc
-spec:
-  accessModes:
-    - ReadWriteMany   # both ingestion_service (writer) and analysis_service (reader) mount this concurrently
-  resources:
-    requests:
-      storage: 256Mi
-  # NOTE: ReadWriteMany requires a storage class that supports it (e.g. NFS,
-  # EFS, or Longhorn). The default storage class on most single-node
-  # clusters (including minikube's standard provisioner) only supports
-  # ReadWriteOnce. For local testing with minikube/kind, either:
-  #   (a) enable an RWX-capable addon (e.g. `minikube addons enable nfs-provisioner`), or
-  #   (b) run ingestion_service and analysis_service as a single pod sharing
-  #       an emptyDir volume instead of a PVC, for local demo purposes only.
-  # storageClassName: <your-rwx-capable-class>
-
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -173,15 +153,8 @@ spec:
           env:
             - name: KAFKA_BOOTSTRAP_SERVERS
               value: "kafka:9092"
-            - name: VECTOR_INDEX_PATH
-              value: "/shared/index"
-            - name: VECTOR_BACKEND
-              value: "qdrant"   # switch to "faiss" to fall back
             - name: QDRANT_URL
               value: "http://qdrant:6333"
-          volumeMounts:
-            - name: vector-index
-              mountPath: /shared
           readinessProbe:
             httpGet:
               path: /health
@@ -195,10 +168,6 @@ spec:
             limits:
               memory: "1Gi"
               cpu: "500m"
-      volumes:
-        - name: vector-index
-          persistentVolumeClaim:
-            claimName: vector-index-pvc
 
 ---
 apiVersion: apps/v1
@@ -226,10 +195,10 @@ spec:
           env:
             - name: REDIS_HOST
               value: "redis"
+            - name: QDRANT_URL
+              value: "http://qdrant:6333"
             - name: REDIS_PORT
               value: "6379"
-            - name: VECTOR_INDEX_PATH
-              value: "/shared/index"
             - name: GROQ_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -237,9 +206,6 @@ spec:
                   key: groq-api-key
             - name: MOCK_LLM
               value: "false"
-          volumeMounts:
-            - name: vector-index
-              mountPath: /shared
           readinessProbe:
             httpGet:
               path: /health
@@ -253,10 +219,6 @@ spec:
             limits:
               memory: "1Gi"
               cpu: "500m"
-      volumes:
-        - name: vector-index
-          persistentVolumeClaim:
-            claimName: vector-index-pvc
 
 ---
 apiVersion: apps/v1
