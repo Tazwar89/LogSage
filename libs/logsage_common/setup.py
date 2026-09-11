@@ -15,7 +15,7 @@ setup(
         # torch/sentence-transformers download chain entirely.
         "vector": [
             "sentence-transformers",
-            "qdrant-client>=1.9.0",
+            "qdrant-client>=1.10.0,<2.0",
             "pydantic>=2.5,<2.10",
             "numpy",
         ],

@@ -55,18 +55,23 @@ class QdrantVectorStore:
         ]
         self.client.upsert(collection_name=self.collection_name, points=points)
 
+
     def query(self, text, k=1):
         vec = self.embed([text])[0].tolist()
 
         try:
-            hits = self.client.search(collection_name=self.collection_name, query_vector=vec, limit=k)
+            response = self.client.query_points(
+                collection_name=self.collection_name,
+                query=vec,
+                limit=k,
+            )
+            hits = response.points
 
         except UnexpectedResponse:
             return []  # collection doesn't exist yet -- same as "no baseline" in the FAISS version
 
         return [
             {"template_id": h.payload["template_id"], "text": h.payload["text"], "distance": h.score}
-
             for h in hits
         ]
 
