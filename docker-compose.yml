@@ -46,7 +46,7 @@ services:
       kafka:
         condition: service_healthy
       qdrant:
-        condition: service_healthy
+        condition: service_started
 
   analysis_service:
     build:
@@ -65,7 +65,7 @@ services:
       redis:
         condition: service_healthy
       qdrant:
-        condition: service_healthy
+        condition: service_started
 
   consumer_service:
     build:
@@ -85,9 +85,3 @@ services:
       image: qdrant/qdrant:latest
       ports:
         - "6333:6333"
-      healthcheck:
-        test: ["CMD", "wget", "--spider", "-q", "http://localhost:6333/healthz"]
-        interval: 5s
-        timeout: 3s
-        retries: 10
-        start_period: 10s
