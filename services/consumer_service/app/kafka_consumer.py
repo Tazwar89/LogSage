@@ -9,10 +9,15 @@ Run standalone with: python -m app.kafka_consumer
 """
 import json
 import os
+from typing import Any, cast
 from kafka import KafkaConsumer
 
 from logsage_common.log_store import LogStore
-from logsage_common.kafka_config import KAFKA_BOOTSTRAP_SERVERS, LOG_INGESTION_TOPIC
+from logsage_common.kafka_config import (
+    KAFKA_BOOTSTRAP_SERVERS,
+    LOG_INGESTION_TOPIC,
+    KAFKA_SECURITY_KWARGS,
+)
 
 
 def run_consumer():
@@ -22,6 +27,7 @@ def run_consumer():
         value_deserializer=lambda v: json.loads(v.decode("utf-8")) if v is not None else None,
         auto_offset_reset="earliest",
         group_id="logsage-ingestion-workers",
+        **cast(dict[str, Any], KAFKA_SECURITY_KWARGS),
     )
     log_store = LogStore()
 

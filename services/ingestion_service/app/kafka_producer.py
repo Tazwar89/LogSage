@@ -13,11 +13,16 @@ Redis one by one.
 import json
 import logging
 import time
+from typing import Any, cast
 
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 
-from logsage_common.kafka_config import KAFKA_BOOTSTRAP_SERVERS, LOG_INGESTION_TOPIC
+from logsage_common.kafka_config import (
+    KAFKA_BOOTSTRAP_SERVERS,
+    LOG_INGESTION_TOPIC,
+    KAFKA_SECURITY_KWARGS,
+)
 
 logger = logging.getLogger("ingestion_service")
 
@@ -47,6 +52,7 @@ def get_producer(max_retries: int = 10, initial_delay: float = 2.0) -> KafkaProd
                 bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
                 value_serializer=lambda v: json.dumps(v).encode("utf-8"),
                 retries=3,
+                **cast(dict[str, Any], KAFKA_SECURITY_KWARGS),
             )
             logger.info(f"Connected to Kafka at {KAFKA_BOOTSTRAP_SERVERS} on attempt {attempt}")
 
