@@ -16,6 +16,7 @@ from logsage_common.log_store import LogStore
 from logsage_common.kafka_config import (
     KAFKA_BOOTSTRAP_SERVERS,
     LOG_INGESTION_TOPIC,
+    CONSUMER_GROUP_ID,
     KAFKA_SECURITY_KWARGS,
 )
 
@@ -26,7 +27,7 @@ def run_consumer():
         bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
         value_deserializer=lambda v: json.loads(v.decode("utf-8")) if v is not None else None,
         auto_offset_reset="earliest",
-        group_id="logsage-ingestion-workers",
+        group_id=CONSUMER_GROUP_ID,
         **cast(dict[str, Any], KAFKA_SECURITY_KWARGS),
     )
     log_store = LogStore()
