@@ -27,3 +27,4 @@ primary_region = "yyz"
   memory = "1024mb"
   cpu_kind = "shared"
   cpus = 1
+  min_machines_running = 1
