@@ -16,4 +16,5 @@ RUN uv pip install --system --no-cache -r requirements.txt
 
 COPY services/consumer_service/app ./app
 
+ENV PYTHONUNBUFFERED=1
 CMD ["python", "-m", "app.main"]
