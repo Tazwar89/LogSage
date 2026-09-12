@@ -67,7 +67,7 @@ def analyze(trace_id: str):
             detail="No baseline index available yet -- call ingestion_service's /upload/baseline first",
         )
 
-    anomalous, nearest = is_anomalous(entry["message"], baseline_store, threshold=0.6)
+    anomalous, nearest = is_anomalous(entry["message"], baseline_store, threshold=0.775)
 
     if not anomalous:
         return {"trace_id": trace_id, "anomalous": False, "nearest_match": nearest}

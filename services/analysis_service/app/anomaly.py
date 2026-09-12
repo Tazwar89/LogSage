@@ -1,4 +1,4 @@
-def is_anomalous(query_text, vector_store, threshold=0.6):
+def is_anomalous(query_text, vector_store, threshold=0.775):
     results = vector_store.query(query_text, k=1)
 
     if not results:

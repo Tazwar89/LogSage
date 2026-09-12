@@ -1,1 +1,14 @@
 081109 999999 999 FATAL dfs.DataNode$PacketResponder: CRITICAL SECURITY BREACH detected in block encryption module, immediate shutdown required
+081109 215734 3055 INFO dfs.DataNode$DataXceiver: 10.250.6.214:50010 Served block blk_5739119717322549945 to /10.251.43.115
+081109 220032 3137 WARN dfs.DataNode$DataXceiver: 10.250.14.196:50010:Got exception while serving blk_-305633040016166849 to /10.251.38.53:
+081109 220403 3148 WARN dfs.DataNode$DataXceiver: 10.251.107.227:50010:Got exception while serving blk_-6290631608800952376 to /10.251.109.209:
+081109 220528 3174 INFO dfs.DataNode$DataXceiver: 10.251.203.166:50010 Served block blk_8787656642683881295 to /10.251.107.98
+081109 221105 3338 WARN dfs.DataNode$DataXceiver: 10.251.90.64:50010:Got exception while serving blk_-4841792440390267307 to /10.251.90.239:
+081109 221151 3361 WARN dfs.DataNode$DataXceiver: 10.250.10.144:50010:Got exception while serving blk_5126469776250053435 to /10.250.11.100:
+081109 222040 3463 WARN dfs.DataNode$DataXceiver: 10.251.71.146:50010:Got exception while serving blk_-2032740670708110312 to /10.251.197.161:
+081109 222041 3390 WARN dfs.DataNode$DataXceiver: 10.251.67.113:50010:Got exception while serving blk_-62891505109755100 to /10.250.7.96:
+081109 222342 3462 WARN dfs.DataNode$DataXceiver: 10.251.74.79:50010:Got exception while serving blk_2244903517044280975 to /10.251.74.134:
+081109 222650 3459 WARN dfs.DataNode$DataXceiver: 10.251.214.112:50010:Got exception while serving blk_5905933788014151041 to /10.251.214.112:
+081109 223211 3544 INFO dfs.DataNode$DataXceiver: 10.251.111.80:50010 Served block blk_6296828743242110158 to /10.251.42.246
+081109 223910 3540 WARN dfs.DataNode$DataXceiver: 10.251.43.210:50010:Got exception while serving blk_2969087638814291714 to /10.251.199.86:
+081109 224054 3560 WARN dfs.DataNode$DataXceiver: 10.251.126.255:50010:Got exception while serving blk_2879780987351022871 to /10.251.39.144:
