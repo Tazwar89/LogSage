@@ -6,7 +6,7 @@ Kafka log-ingestion topic (published by ingestion_service) and writing
 each entry into Redis (read by analysis_service).
 """
 import json, logging, time
-
+from typing import Any, cast
 from kafka import KafkaConsumer
 from kafka.errors import KafkaError
 
@@ -15,6 +15,7 @@ from logsage_common.kafka_config import (
     KAFKA_BOOTSTRAP_SERVERS,
     LOG_INGESTION_TOPIC,
     CONSUMER_GROUP_ID,
+    KAFKA_SECURITY_KWARGS,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -39,6 +40,7 @@ def connect_with_retry(max_retries: int = 10, initial_delay: float = 2.0) -> Kaf
                 value_deserializer=lambda v: json.loads(v.decode("utf-8")) if v is not None else None,
                 auto_offset_reset="earliest",
                 group_id=CONSUMER_GROUP_ID,
+                **cast(dict[str, Any], KAFKA_SECURITY_KWARGS),
             )
             logger.info(f"Connected to Kafka at {KAFKA_BOOTSTRAP_SERVERS} on attempt {attempt}")
 
