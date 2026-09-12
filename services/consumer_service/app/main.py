@@ -69,11 +69,18 @@ def run_consumer():
     logger.info("Consumer started, waiting for messages...")
 
     for message in consumer:
-        payload = message.value
-        trace_id = payload["trace_id"]
-        entry = payload["entry"]
-        log_store.save(trace_id, entry)
-        logger.info(f"Stored {trace_id}")
+        try:
+            payload = message.value
+            trace_id = payload["trace_id"]
+            entry = payload["entry"]
+            log_store.save(trace_id, entry)
+            logger.info(f"Stored {trace_id}")
+
+        except Exception as e:
+            logger.error(
+                f"Skipping unprocessable message at offset {message.offset} "
+                f"partition {message.partition}: {e}"
+            )
 
 
 if __name__ == "__main__":
