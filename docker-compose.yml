@@ -59,6 +59,7 @@ services:
       - REDIS_PORT=6379
       - QDRANT_URL=http://qdrant:6333
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - LLM_MODEL=${LLM_MODEL:-openai/gpt-oss-20b}
       - MOCK_LLM=${MOCK_LLM:-false}
       - HF_TOKEN=${HF_TOKEN:-}
     depends_on:
