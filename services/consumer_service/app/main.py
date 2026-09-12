@@ -22,13 +22,18 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger("consumer_service")
 
 
+def _safe_json_deserializer(v):
+    if v is None:
+        return None
+
+    try:
+        return json.loads(v.decode("utf-8"))
+
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return {"__malformed__": True, "raw": v}
+
+
 def connect_with_retry(max_retries: int = 10, initial_delay: float = 2.0) -> KafkaConsumer:
-    """
-    Same rationale as ingestion_service's get_producer(): Compose's
-    `depends_on: condition: service_started` doesn't guarantee Kafka is
-    actually ready to accept connections yet, so this retries with
-    exponential backoff instead of crashing on the first attempt.
-    """
     delay = initial_delay
     last_error = None
 
@@ -37,7 +42,7 @@ def connect_with_retry(max_retries: int = 10, initial_delay: float = 2.0) -> Kaf
             consumer = KafkaConsumer(
                 LOG_INGESTION_TOPIC,
                 bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-                value_deserializer=lambda v: json.loads(v.decode("utf-8")) if v is not None else None,
+                value_deserializer=_safe_json_deserializer,
                 auto_offset_reset="earliest",
                 group_id=CONSUMER_GROUP_ID,
                 **cast(dict[str, Any], KAFKA_SECURITY_KWARGS),
@@ -69,18 +74,16 @@ def run_consumer():
     logger.info("Consumer started, waiting for messages...")
 
     for message in consumer:
-        try:
-            payload = message.value
-            trace_id = payload["trace_id"]
-            entry = payload["entry"]
-            log_store.save(trace_id, entry)
-            logger.info(f"Stored {trace_id}")
+        payload = message.value
 
-        except Exception as e:
-            logger.error(
-                f"Skipping unprocessable message at offset {message.offset} "
-                f"partition {message.partition}: {e}"
-            )
+        if not isinstance(payload, dict) or "__malformed__" in payload or "trace_id" not in payload:
+            logger.warning(f"Skipping malformed message at offset {message.offset}")
+            continue
+
+        trace_id = payload["trace_id"]
+        entry = payload["entry"]
+        log_store.save(trace_id, entry)
+        logger.info(f"Stored {trace_id}")
 
 
 if __name__ == "__main__":
