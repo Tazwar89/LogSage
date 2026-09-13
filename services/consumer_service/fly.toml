@@ -9,5 +9,5 @@ primary_region = "yyz"
   cpu_kind = "shared"
   cpus = 1
 
-[restart]
+[[restart]]
   policy = "always"
