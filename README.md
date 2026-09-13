@@ -24,49 +24,53 @@ Manually reading through thousands of system log lines to find the handful that 
 │ - Drain3 template    │                                            ▼
 │   mining             │                                    ┌──────────────┐
 │ - builds baseline    │                                    │    Redis     │
-│   FAISS index        │                                    │ (log store)  │
+│   Qdrant collection  │                                    │ (log store)  │
 └──────────┬───────────┘                                    └──────┬───────┘
            │                                                       │
            ▼                                                       │
    ┌───────────────┐                                               │
-   │ shared volume │◀───────────────────────┐                      │
-   │ (FAISS index) │                        │                      │
-   └───────┬───────┘                        │                      │
-           │                                │                      │
-           ▼                                │                      ▼
-   ┌────────────────────────────────────────┴──────────────────────────┐
-   │                         analysis_service                          │
-   │                                                                   │
-   │  GET /analyze/{trace_id}  GET /logs  GET /stats                   │
-   │                                                                   │
-   │  1. loads baseline index from shared volume                       │
-   │  2. anomaly detection (FAISS distance threshold)                  │
-   │  3. if anomalous → LangGraph agentic pipeline:                    │
-   │       triage node → research node (RAG) → report node             │
-   │  4. Pandas/scikit-learn analytics via /stats                      │
-   └───────────────────────────────────────────────────────────────────┘
+   │    Qdrant     │◀──────────────────────┐                       │
+   │ (vector store)│                       │                       │
+   └───────┬───────┘                       │                       │
+           │                               │                       │
+           ▼                               │                       ▼
+   ┌───────────────────────────────────────┴──────────────────────────┐
+   │                         analysis_service                         │
+   │                                                                  │
+   │  GET /analyze/{trace_id}  GET /logs  GET /stats                  │
+   │                                                                  │
+   │  1. queries the baseline collection in Qdrant                    │
+   │  2. anomaly detection (Qdrant L2 distance threshold)              │
+   │  3. if anomalous → LangGraph agentic pipeline:                   │
+   │       triage node → research node (RAG) → report node            │
+   │  4. Pandas/scikit-learn analytics via /stats                     │
+   └──────────────────────────────────────────────────────────────────┘
 ```
 
-### Why three separate services, not one
+### Why three application services, not one
 
 Each service owns a distinct responsibility and can be deployed, scaled, and reasoned about independently:
 
-- **`ingestion_service`** — parsing, template mining, baseline index construction. Write-heavy, bursty. Kept to a single replica since concurrent baseline rebuilds would race on the shared index volume.
+- **`ingestion_service`** — parsing, template mining, baseline index construction. Write-heavy, bursty. Kept to a single replica since concurrent baseline rebuilds recreate the same Qdrant collection.
 - **`consumer_service`** — a minimal, non-HTTP worker that only consumes from Kafka and writes to Redis. No FastAPI, no torch, no LLM dependencies — its image is intentionally the lightest of the three. Safely scaled to multiple replicas; Kafka's consumer-group protocol handles partition rebalancing.
 - **`analysis_service`** — anomaly detection, RAG, the LangGraph agentic pipeline, and analytics. Read-heavy, latency-sensitive, the only service that calls an external LLM. Safely scaled independently of ingestion.
 
-They share one library, **`logsage_common`** (`libs/logsage_common`), installed editable into all three images, so fixes to `VectorStore`, `LogStore`, or `redact()` propagate everywhere without copy-pasted code.
+Alongside these, **Qdrant** runs as its own deployed service (self-hosted, `logsage-qdrant` on Fly.io) rather than an embedded library — both `ingestion_service` (writer) and `analysis_service` (reader) talk to it over HTTP, so there's no shared volume or file-based index to keep in sync.
+
+They also share one library, **`logsage_common`** (`libs/logsage_common`), installed editable into all three application images, so fixes to `QdrantVectorStore`, `LogStore`, or `redact()` propagate everywhere without copy-pasted code.
 
 ### Key design decision: separate baseline vs. analysis ingestion
 
 Anomaly detection only works if new events are scored against a **fixed, stable reference distribution**. If the log being analyzed is included in the same batch used to build that reference index, it trivially matches itself (distance ≈ 0) and never gets flagged.
 
-- **`POST /upload/baseline`** (ingestion_service) — parses a log file, mines templates via Drain3, and *rebuilds* the FAISS baseline index, persisting it to a shared volume.
-- **`POST /upload/logs`** (ingestion_service) — parses a log file and publishes each line to Kafka for asynchronous storage, **without** touching the baseline index.
+- **`POST /upload/baseline`** (ingestion_service) — parses a log file, mines templates via Drain3, and *recreates* the Qdrant `baseline` collection from scratch.
+- **`POST /upload/logs`** (ingestion_service) — parses a log file and publishes each line to Kafka for asynchronous storage, **without** touching the baseline collection.
 
-### Key design decision: the baseline index is shared via disk, not memory
+### Key design decision: Qdrant as a shared server, not a shared volume
 
-Since `ingestion_service` (writer) and `analysis_service` (reader) are separate processes/containers, the FAISS index can no longer live in a single shared Python object. `VectorStore.save()`/`.load()` persist it to a Docker-managed volume (`vector-index`) mounted into both containers at `/shared`. `analysis_service` reloads the index fresh on every `/analyze` call, so it always reflects the latest baseline without any direct service-to-service coupling.
+`ingestion_service` (writer) and `analysis_service` (reader) are separate processes/containers, so the vector index can't live in a single in-process object. This originally ran on FAISS persisted to a shared Docker/PVC volume (`save()`/`load()` serializing to disk); it's since migrated to **Qdrant**, run as its own server both services connect to over `QDRANT_URL`. `QdrantVectorStore.save()`/`.load()` are now no-ops — every `upsert()` is visible to readers immediately, with no shared volume, no serialization step, and no `ReadWriteMany` PVC requirement. `analysis_service` queries the `baseline` collection fresh on every `/analyze` call, so it always reflects the latest baseline without any direct service-to-service coupling.
+
+Note: Qdrant uses true L2 distance, while the earlier FAISS setup used squared L2 — the anomaly threshold (see Known limitations) was re-tuned accordingly during the migration.
 
 ### Key design decision: agentic diagnosis, not a single prompt call
 
@@ -82,9 +86,9 @@ State accumulates across nodes via a typed dict, matching LangGraph's standard p
 
 | Service | Port | Responsibilities | Depends on |
 |---|---|---|---|
-| `ingestion_service` | 8001 | Parsing, Drain3 template mining, baseline FAISS index construction, Kafka publishing | Kafka |
+| `ingestion_service` | 8001 | Parsing, Drain3 template mining, baseline Qdrant collection construction, Kafka publishing | Kafka, Qdrant |
 | `consumer_service` | — (no HTTP) | Consumes from Kafka, writes parsed logs to Redis | Kafka, Redis |
-| `analysis_service` | 8002 | Anomaly detection, RAG, LangGraph agentic diagnosis, Pandas/scikit-learn analytics | Redis, shared FAISS volume, LLM provider |
+| `analysis_service` | 8002 | Anomaly detection, RAG, LangGraph agentic diagnosis, Pandas/scikit-learn analytics | Redis, Qdrant, LLM provider |
 
 ## API endpoints
 
@@ -113,15 +117,16 @@ Both services also serve interactive Swagger docs at `/docs`.
 - **FastAPI** — async REST APIs for ingestion_service and analysis_service
 - **Drain3** — log template mining
 - **sentence-transformers** (`all-MiniLM-L6-v2`) — local, free embedding model
-- **FAISS** (`faiss-cpu`) — vector similarity search, persisted to a shared Docker volume
-- **Apache Kafka** (+ Zookeeper) — asynchronous log ingestion pipeline between ingestion_service and consumer_service
-- **Redis** — persistent store for parsed log entries, replacing an earlier in-memory dict
+- **Qdrant** (`qdrant-client`) — vector similarity search, run as its own server (self-hosted on Fly.io in production, via Docker Compose locally); replaced an earlier FAISS + shared-volume approach
+- **Apache Kafka** (+ Zookeeper locally / Confluent Cloud in production) — asynchronous log ingestion pipeline between ingestion_service and consumer_service
+- **Redis** (self-hosted locally / Upstash in production) — persistent store for parsed log entries, replacing an earlier in-memory dict
 - **LangGraph** — 3-node agentic diagnostic pipeline (triage → research → report)
-- **Pandas / scikit-learn** — `/stats` analytics and an `IsolationForest`-based secondary anomaly detector, offered alongside the FAISS distance-threshold approach
-- **Groq API** (OpenAI-SDK-compatible, `openai/gpt-oss-20b`) — LLM inference. Any OpenAI-SDK-compatible provider works by swapping `base_url`/`model` in `agentic_pipeline.py`
+- **Pandas / scikit-learn** — `/stats` analytics and an `IsolationForest`-based secondary anomaly detector, offered alongside the Qdrant distance-threshold approach
+- **Groq API** (OpenAI-SDK-compatible) — LLM inference, model configurable via the `LLM_MODEL` environment variable (default `openai/gpt-oss-20b`); any OpenAI-SDK-compatible provider works by setting `LLM_BASE_URL`/`LLM_MODEL`
 - **Docker Compose** — local multi-container orchestration
-- **Kubernetes manifests** (`k8s/`) — Deployments, Services, and a PersistentVolumeClaim for the shared FAISS index, mirroring the Compose topology for cluster deployment
-- **GitHub Actions** — CI running the full test suite on every push
+- **Kubernetes manifests** (`k8s/`) — Deployments, Services, and a PersistentVolumeClaim for Qdrant's storage, mirroring the Compose topology for cluster deployment; maintained for portfolio/reference purposes rather than as an actively deployed target
+- **Fly.io** — production deployment target (`logsage-ingestion`, `logsage-consumer`, `logsage-analysis`, `logsage-qdrant`)
+- **GitHub Actions** — CI running the full test suite on every push, publishing images to GHCR
 - **Loghub HDFS_2k** — test dataset
 
 ## Setup
@@ -187,7 +192,7 @@ pytest tests/consumer_service -v
 This is exactly how CI runs it (`.github/workflows/test.yml`) — four separate steps, not one.
 
 The suite covers:
-- **`tests/logsage_common/`** — FAISS index build/query/persistence (including a cross-process save/load round-trip regression test), and Redis-backed log storage (via `fakeredis`, no real Redis server needed)
+- **`tests/logsage_common/`** — Qdrant-backed vector store build/query behavior (mocked client, no real Qdrant server needed), and Redis-backed log storage (via `fakeredis`, no real Redis server needed)
 - **`tests/ingestion_service/`** — log line parsing edge cases, and Kafka producer message construction/error handling (mocked, no real broker needed)
 - **`tests/analysis_service/`** — anomaly threshold boundary behavior, the full 3-node LangGraph pipeline (LLM calls mocked), and Pandas/scikit-learn analytics
 - **`tests/consumer_service/`** — Kafka consumer message handling (mocked)
@@ -196,7 +201,7 @@ All external dependencies (embedding model, LLM API, Kafka broker, Redis server)
 
 ## Kubernetes deployment
 
-`k8s/deployment.yaml` and `k8s/service.yaml` mirror the Compose topology: one Deployment per service plus Redis/Kafka/Zookeeper, and a `PersistentVolumeClaim` (`vector-index-pvc`) replacing the Compose named volume for the shared FAISS index.
+`k8s/deployment.yaml` and `k8s/service.yaml` mirror the Compose topology: one Deployment per service plus Redis/Kafka/Zookeeper/Qdrant, and a `PersistentVolumeClaim` (`qdrant-pvc`) for Qdrant's own storage.
 
 ```bash
 kubectl create secret docker-registry ghcr-secret \
@@ -207,19 +212,17 @@ kubectl apply -f k8s/
 ```
 
 Two things worth knowing before trying this on a local cluster:
-- The PVC requests `ReadWriteMany` access (both ingestion and analysis need concurrent access), which most local provisioners (minikube's default, kind) don't support out of the box — see the comments in `k8s/deployment.yaml` for workarounds.
+- The PVC requests `ReadWriteOnce` access — only Qdrant itself writes to its storage, so this is compatible with local provisioners (minikube's default, kind) unlike the earlier `ReadWriteMany` FAISS setup.
 - All three service images plus the shared base are published to GHCR by CI on every push to main; k8s/deployment.yaml pulls them directly, so no local image build/load step is needed for cluster deployment.
 
 ## Known limitations
 
-- The `ReadWriteMany` PVC requirement means the Kubernetes manifests need a compatible storage class or a local workaround to actually run — they aren't a drop-in `kubectl apply` on every cluster.
-- `ingestion_service` is pinned to a single replica; scaling it would require coordinating concurrent baseline rebuilds against the shared index, which isn't implemented.
+- `ingestion_service` is pinned to a single replica; scaling it would require coordinating concurrent baseline rebuilds against the same Qdrant collection, which isn't implemented.
 - The knowledge base (`data/knowledge_base.json`) is a small, hand-written seed set for demonstration, not a comprehensive fix database.
-- Anomaly threshold (`0.6`) was chosen empirically against the HDFS_2k dataset and would need re-tuning for other log formats.
-- There's a small delay between `/upload/logs` and a trace_id becoming queryable via `/analyze`, since ingestion now happens asynchronously through Kafka rather than synchronously in the request/response cycle.
+- Anomaly threshold is `sqrt(0.6) ≈ 0.775`, tuned for Qdrant's true L2 distance against the HDFS_2k dataset, and would need re-tuning for other log formats or distance metrics.
+- There's a small delay between `/upload/logs` and a trace_id becoming queryable via `/analyze`, since ingestion happens asynchronously through Kafka rather than synchronously in the request/response cycle.
 
 ## Possible extensions
 
 - LLM-as-judge evaluation harness to score diagnosis quality against a labeled set.
-- Swap the FAISS/shared-volume approach for a dedicated vector database service (e.g. Qdrant or Chroma server), removing the `ReadWriteMany` constraint entirely.
-- Configurable model/provider via environment variable instead of hardcoded in `agentic_pipeline.py`.
+- Production observability (latency/token-usage tracing via LangSmith or similar) for the agentic pipeline.
