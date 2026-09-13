@@ -1,0 +1,37 @@
+[
+  {
+    "id": "oom_fsnamesystem",
+    "raw_log": "081109 203807 222 ERROR dfs.FSNamesystem: java.lang.OutOfMemoryError: Java heap space at org.apache.hadoop.dfs.FSNamesystem.getAdditionalBlock",
+    "expected_root_cause": "JVM heap exhaustion (OutOfMemoryError) in FSNamesystem",
+    "expected_fix": "Increase JVM heap size via -Xmx flag",
+    "reference_kb_entry": "OutOfMemoryError in FSNamesystem"
+  },
+  {
+    "id": "datanode_connection_refused",
+    "raw_log": "081109 220204 3111 WARN dfs.DataNode$DataXceiver: 10.251.71.146:50010:Connection refused to DataNode at 10.251.71.200:50010",
+    "expected_root_cause": "DataNode unreachable / connection refused",
+    "expected_fix": "Check DataNode process status and firewall rules",
+    "reference_kb_entry": "Connection refused to DataNode"
+  },
+  {
+    "id": "security_breach",
+    "raw_log": "081109 999999 999 FATAL dfs.DataNode$PacketResponder: CRITICAL SECURITY BREACH detected in block encryption module, immediate shutdown required",
+    "expected_root_cause": "Security breach in block encryption / unauthorized access",
+    "expected_fix": "Isolate affected node, rotate encryption keys, and audit access logs",
+    "reference_kb_entry": null
+  },
+  {
+    "id": "disk_io_error",
+    "raw_log": "081109 231045 3812 ERROR dfs.DataNode$DataXceiver: Input/output error while writing block blk_-9081234567890123456 to disk at /data/dn/current",
+    "expected_root_cause": "Disk I/O failure on the DataNode's storage volume",
+    "expected_fix": "Inspect and replace the failing disk; verify RAID/volume health",
+    "reference_kb_entry": null
+  },
+  {
+    "id": "replication_underreplicated",
+    "raw_log": "081109 210012 1450 WARN dfs.FSNamesystem: Block blk_1122334455667788990 is under-replicated, replicas=1, expected=3",
+    "expected_root_cause": "Insufficient block replication due to DataNode unavailability",
+    "expected_fix": "Bring affected DataNodes back online or trigger manual re-replication",
+    "reference_kb_entry": null
+  }
+]
