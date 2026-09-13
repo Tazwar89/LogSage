@@ -5,8 +5,9 @@ ruff
 # Needed to import/collect test modules across all services --
 # tests exercise real service code, which imports these directly.
 redis
-faiss-cpu
+qdrant-client
 sentence-transformers
+pydantic
 numpy
 kafka-python
 langgraph

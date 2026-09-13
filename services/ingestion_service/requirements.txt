@@ -3,3 +3,5 @@ uvicorn[standard]
 python-multipart
 drain3
 kafka-python-ng
+qdrant-client
+sentence-transformers
