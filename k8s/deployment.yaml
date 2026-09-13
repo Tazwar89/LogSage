@@ -204,6 +204,8 @@ spec:
                 secretKeyRef:
                   name: logsage-secrets
                   key: groq-api-key
+            - name: LLM_MODEL
+              value: "openai/gpt-oss-20b"
             - name: MOCK_LLM
               value: "false"
           readinessProbe:
