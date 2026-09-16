@@ -67,7 +67,7 @@ def analyze(trace_id: str):
             detail="No baseline index available yet -- call ingestion_service's /upload/baseline first",
         )
 
-    anomalous, nearest = is_anomalous(entry["message"], baseline_store, threshold=0.775)
+    anomalous, nearest = is_anomalous(entry["message"], baseline_store)
 
     if not anomalous:
         return {"trace_id": trace_id, "anomalous": False, "nearest_match": nearest}
@@ -84,9 +84,12 @@ def list_logs():
 
 @app.get("/stats")
 def stats():
-    entries: list[dict] = [
-        entry for tid in log_store.list_trace_ids()
-        if (entry := log_store.get(tid.decode("utf-8") if isinstance(tid, bytes) else tid)) is not None
+    entries = [
+        entry for raw_tid in log_store.list_trace_ids()
+        if (
+            tid := (raw_tid.decode("utf-8") if isinstance(raw_tid, bytes) else raw_tid)
+        )
+        and (entry := log_store.get(tid)) is not None
     ]
 
     return compute_log_stats(entries)
