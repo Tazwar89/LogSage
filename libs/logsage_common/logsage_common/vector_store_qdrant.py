@@ -73,6 +73,7 @@ class QdrantVectorStore:
         return [
             {"template_id": h.payload["template_id"], "text": h.payload["text"], "distance": h.score}
             for h in hits
+            if h.payload is not None
         ]
 
 
