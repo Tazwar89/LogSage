@@ -1,63 +1,229 @@
 {
-  "num_cases": 5,
-  "accuracy": 1.0,
-  "mean_score": 0.92,
+  "num_positive_cases": 13,
+  "accuracy": 0.3077,
+  "mean_score": 0.2846,
   "pass_threshold": 0.7,
-  "cases": [
+  "num_negative_cases": 10,
+  "false_positive_rate": 0.0,
+  "skipped_negatives_no_baseline": 0,
+  "positive_cases": [
     {
       "id": "oom_fsnamesystem",
       "raw_log": "081109 203807 222 ERROR dfs.FSNamesystem: java.lang.OutOfMemoryError: Java heap space at org.apache.hadoop.dfs.FSNamesystem.getAdditionalBlock",
       "expected_root_cause": "JVM heap exhaustion (OutOfMemoryError) in FSNamesystem",
-      "actual_root_cause": "Insufficient Java heap space for FSNamesystem causing OutOfMemoryError",
-      "actual_fix": "Increase JVM heap size via -Xmx flag (e.g., set to 4g) and monitor memory usage; also check for memory leaks or large metadata",
-      "pipeline_confidence": 0.95,
+      "actual_root_cause": "Insufficient Java heap memory allocated to FSNamesystem",
+      "actual_fix": "Increase JVM heap size (e.g., set -Xmx to a larger value such as 4G) and monitor memory usage",
+      "pipeline_confidence": 0.9,
       "judge_score": 1.0,
       "judge_verdict": "pass",
-      "judge_rationale": "The diagnosis correctly identifies JVM heap exhaustion as the root cause and recommends increasing the heap size via -Xmx, matching the reference and providing appropriate additional advice."
+      "judge_rationale": "It correctly identifies JVM heap exhaustion as the root cause and suggests increasing the heap size via -Xmx, matching the reference diagnosis.",
+      "detector_missed": false
     },
     {
       "id": "datanode_connection_refused",
       "raw_log": "081109 220204 3111 WARN dfs.DataNode$DataXceiver: 10.251.71.146:50010:Connection refused to DataNode at 10.251.71.200:50010",
       "expected_root_cause": "DataNode unreachable / connection refused",
-      "actual_root_cause": "DataNode process not running or port 50010 blocked by firewall",
-      "actual_fix": "Verify the DataNode service is active; restart it if necessary and ensure firewall rules permit traffic on port 50010",
+      "actual_root_cause": "DataNode process not running or blocked by firewall",
+      "actual_fix": "Verify the DataNode service is active on the target host; if stopped, restart it. Also check firewall/iptables to ensure port 50010 is open for inbound/outbound traffic.",
       "pipeline_confidence": 0.8,
-      "judge_score": 0.9,
+      "judge_score": 1.0,
       "judge_verdict": "pass",
-      "judge_rationale": "The system correctly identifies the DataNode unavailability due to connection refusal and proposes checking the service status and firewall, matching the reference diagnosis."
+      "judge_rationale": "System correctly identifies the root cause and suggests an appropriate fix.",
+      "detector_missed": false
     },
     {
       "id": "security_breach",
       "raw_log": "081109 999999 999 FATAL dfs.DataNode$PacketResponder: CRITICAL SECURITY BREACH detected in block encryption module, immediate shutdown required",
       "expected_root_cause": "Security breach in block encryption / unauthorized access",
-      "actual_root_cause": "The DataNode packet responder detected a critical security breach in the block encryption module, likely caused by a corrupted or out\u2011of\u2011date encryption library or misconfigured encryption key/algorithm. This failure compromises data integrity and requires immediate shutdown to prevent further damage.",
-      "actual_fix": "1. Verify the integrity and version of the block encryption library; upgrade to the latest compatible release if needed.\n2. Re\u2011generate or replace any corrupted encryption keys and ensure the DataNode configuration references the correct key files.\n3. Disable or isolate the affected DataNode process immediately, then restart it after applying the fixes.\n4. Run a full integrity audit of stored blocks to detect any tampering, and rebuild any corrupted blocks from replicas.\n5. Update firewall and access control rules to restrict unauthorized connections to DataNodes, and monitor for repeated access attempts.",
-      "pipeline_confidence": 0.85,
+      "actual_root_cause": "Security breach in block encryption module of dfs.DataNode$PacketResponder causing immediate shutdown",
+      "actual_fix": "1. Verify current encryption configuration (key material, algorithm, cipher suite).\n2. Apply latest security patch for Hadoop HDFS.\n3. Reconfigure or disable block encryption if not required.\n4. Restart DataNode after ensuring firewall and authentication settings are correct.",
+      "pipeline_confidence": 0.9,
       "judge_score": 0.9,
       "judge_verdict": "pass",
-      "judge_rationale": "The diagnosis correctly identifies the block encryption security breach and recommends isolation, key rotation, and audit, matching the reference."
+      "judge_rationale": "Diagnosis correctly identifies the block encryption security breach and provides a plausible, detailed remediation plan.",
+      "detector_missed": false
     },
     {
       "id": "disk_io_error",
       "raw_log": "081109 231045 3812 ERROR dfs.DataNode$DataXceiver: Input/output error while writing block blk_-9081234567890123456 to disk at /data/dn/current",
       "expected_root_cause": "Disk I/O failure on the DataNode's storage volume",
-      "actual_root_cause": "Disk I/O failure (hardware failure, disk full, or filesystem corruption) preventing DataNode from writing block blk_-9081234567890123456 to /data/dn/current",
-      "actual_fix": "1. Verify available disk space on /data/dn/current (df -h). 2. Run filesystem consistency check (e.g., fsck or checkfs for ext4) on the partition. 3. Inspect dmesg/syslog for hardware error messages (e.g., I/O errors, SMART failures). 4. If disk is full or corrupted, free space or replace the failing disk. 5. Restart the DataNode after resolution.",
-      "pipeline_confidence": 0.8,
-      "judge_score": 0.9,
-      "judge_verdict": "pass",
-      "judge_rationale": "It correctly identifies Disk I/O failure as the root cause and suggests thorough steps\u2014including disk inspection, replacement, and RAID verification\u2014that align with the reference fix."
+      "actual_root_cause": null,
+      "actual_fix": null,
+      "pipeline_confidence": null,
+      "judge_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_rationale": "missed by is_anomalous() -- diagnostic pipeline never ran",
+      "detector_missed": true
     },
     {
       "id": "replication_underreplicated",
       "raw_log": "081109 210012 1450 WARN dfs.FSNamesystem: Block blk_1122334455667788990 is under-replicated, replicas=1, expected=3",
       "expected_root_cause": "Insufficient block replication due to DataNode unavailability",
-      "actual_root_cause": "DataNode(s) failure or network issue causing insufficient block replicas (replication factor 3, only 1 replica found).",
-      "actual_fix": "Verify all DataNodes are running and reachable, check for disk errors, ensure network connectivity. If a DataNode is down, restart it or bring a new one online. Optionally, increase replication factor or manually trigger re-replication for the affected block.",
-      "pipeline_confidence": 0.73,
-      "judge_score": 0.9,
+      "actual_root_cause": null,
+      "actual_fix": null,
+      "pipeline_confidence": null,
+      "judge_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_rationale": "missed by is_anomalous() -- diagnostic pipeline never ran",
+      "detector_missed": true
+    },
+    {
+      "id": "hdfs2k_xceiver_exception_1",
+      "raw_log": "081109 214043 2561 WARN dfs.DataNode$DataXceiver: 10.251.30.85:50010:Got exception while serving blk_-2918118818249673980 to /10.251.90.64:",
+      "expected_root_cause": "Client dropped/reset the connection to the DataNode mid-transfer while it was serving the block",
+      "actual_root_cause": "Client disconnect or network timeout during block transfer",
+      "actual_fix": "Verify network connectivity between DataNode and client, check firewall rules for port 50010, ensure DataNode process is running and has sufficient resources. Restart DataNode if needed.",
+      "pipeline_confidence": 0.8,
+      "judge_score": 0.8,
       "judge_verdict": "pass",
-      "judge_rationale": "Accurately identifies insufficient replication due to DataNode issues and recommends restoring nodes or re-replication."
+      "judge_rationale": "The system correctly identified the client disconnect/network timeout as the root cause and offered a plausible, if slightly broader, set of fixes that would likely resolve the issue.",
+      "detector_missed": false
+    },
+    {
+      "id": "hdfs2k_xceiver_exception_2",
+      "raw_log": "081109 221105 3338 WARN dfs.DataNode$DataXceiver: 10.251.90.64:50010:Got exception while serving blk_-4841792440390267307 to /10.251.90.239:",
+      "expected_root_cause": "Client dropped/reset the connection to the DataNode mid-transfer while it was serving the block",
+      "actual_root_cause": null,
+      "actual_fix": null,
+      "pipeline_confidence": null,
+      "judge_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_rationale": "missed by is_anomalous() -- diagnostic pipeline never ran",
+      "detector_missed": true
+    },
+    {
+      "id": "hdfs2k_xceiver_exception_3",
+      "raw_log": "081109 224420 3666 WARN dfs.DataNode$DataXceiver: 10.251.73.188:50010:Got exception while serving blk_7517964792804498202 to /10.250.6.191:",
+      "expected_root_cause": "Client dropped/reset the connection to the DataNode mid-transfer while it was serving the block",
+      "actual_root_cause": "The DataNode service was unavailable (or crashed) at the moment it attempted to serve the requested block, leading to an exception during the block transfer.",
+      "actual_fix": "Verify that the DataNode process is running on the host, check its logs for any preceding crashes or out\u2011of\u2011memory errors, ensure firewall rules allow traffic on the DataNode port (50010), and confirm sufficient disk space and memory. Restart the DataNode if it is not active or restart the node\u2019s JVM if a crash was detected.",
+      "pipeline_confidence": 0.7,
+      "judge_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_rationale": "Diagnosis attributes the error to a DataNode crash, whereas the reference indicates the client dropped the connection.",
+      "detector_missed": false
+    },
+    {
+      "id": "hdfs2k_xceiver_exception_4",
+      "raw_log": "081110 072124 7772 WARN dfs.DataNode$DataXceiver: 10.251.42.246:50010:Got exception while serving blk_-7658293778087733436 to /10.251.30.179:",
+      "expected_root_cause": "Client dropped/reset the connection to the DataNode mid-transfer while it was serving the block",
+      "actual_root_cause": null,
+      "actual_fix": null,
+      "pipeline_confidence": null,
+      "judge_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_rationale": "missed by is_anomalous() -- diagnostic pipeline never ran",
+      "detector_missed": true
+    },
+    {
+      "id": "hdfs2k_xceiver_exception_5",
+      "raw_log": "081110 082702 8223 WARN dfs.DataNode$DataXceiver: 10.250.15.198:50010:Got exception while serving blk_-1851265222873801714 to /10.251.195.52:",
+      "expected_root_cause": "Client dropped/reset the connection to the DataNode mid-transfer while it was serving the block",
+      "actual_root_cause": null,
+      "actual_fix": null,
+      "pipeline_confidence": null,
+      "judge_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_rationale": "missed by is_anomalous() -- diagnostic pipeline never ran",
+      "detector_missed": true
+    },
+    {
+      "id": "hdfs2k_xceiver_exception_6",
+      "raw_log": "081110 093020 8827 WARN dfs.DataNode$DataXceiver: 10.251.70.211:50010:Got exception while serving blk_-667933171485085225 to /10.251.203.246:",
+      "expected_root_cause": "Client dropped/reset the connection to the DataNode mid-transfer while it was serving the block",
+      "actual_root_cause": null,
+      "actual_fix": null,
+      "pipeline_confidence": null,
+      "judge_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_rationale": "missed by is_anomalous() -- diagnostic pipeline never ran",
+      "detector_missed": true
+    },
+    {
+      "id": "hdfs2k_xceiver_exception_7",
+      "raw_log": "081110 131233 11867 WARN dfs.DataNode$DataXceiver: 10.251.197.226:50010:Got exception while serving blk_2101007907134483259 to /10.251.31.242:",
+      "expected_root_cause": "Client dropped/reset the connection to the DataNode mid-transfer while it was serving the block",
+      "actual_root_cause": null,
+      "actual_fix": null,
+      "pipeline_confidence": null,
+      "judge_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_rationale": "missed by is_anomalous() -- diagnostic pipeline never ran",
+      "detector_missed": true
+    },
+    {
+      "id": "hdfs2k_xceiver_exception_8",
+      "raw_log": "081110 163945 13711 WARN dfs.DataNode$DataXceiver: 10.251.30.101:50010:Got exception while serving blk_-5340885607150360719 to /10.251.30.101:",
+      "expected_root_cause": "Client dropped/reset the connection to the DataNode mid-transfer while it was serving the block",
+      "actual_root_cause": null,
+      "actual_fix": null,
+      "pipeline_confidence": null,
+      "judge_score": 0.0,
+      "judge_verdict": "fail",
+      "judge_rationale": "missed by is_anomalous() -- diagnostic pipeline never ran",
+      "detector_missed": true
+    }
+  ],
+  "negative_cases": [
+    {
+      "id": "hdfs2k_normal_addstoredblock",
+      "raw_log": "081109 204005 35 INFO dfs.FSNamesystem: BLOCK* NameSystem.addStoredBlock: blockMap updated: 10.251.73.220:50010 is added to blk_7128370237687728475 size 67108864",
+      "flagged_anomalous": false,
+      "false_positive": false
+    },
+    {
+      "id": "hdfs2k_normal_packetresponder_terminating",
+      "raw_log": "081109 203615 148 INFO dfs.DataNode$PacketResponder: PacketResponder 1 for block blk_38865049064139660 terminating",
+      "flagged_anomalous": false,
+      "false_positive": false
+    },
+    {
+      "id": "hdfs2k_normal_received_block",
+      "raw_log": "081109 204655 556 INFO dfs.DataNode$PacketResponder: Received block blk_3587508140051953248 of size 67108864 from /10.251.42.84",
+      "flagged_anomalous": false,
+      "false_positive": false
+    },
+    {
+      "id": "hdfs2k_normal_receiving_block",
+      "raw_log": "081109 204815 653 INFO dfs.DataNode$DataXceiver: Receiving block blk_5792489080791696128 src: /10.251.30.6:33145 dest: /10.251.30.6:50010",
+      "flagged_anomalous": false,
+      "false_positive": false
+    },
+    {
+      "id": "hdfs2k_normal_deleting_block",
+      "raw_log": "081109 213837 19 INFO dfs.FSDataset: Deleting block blk_1781953582842324563 file /mnt/hadoop/dfs/data/current/subdir5/blk_1781953582842324563",
+      "flagged_anomalous": false,
+      "false_positive": false
+    },
+    {
+      "id": "hdfs2k_normal_delete_invalidset",
+      "raw_log": "081110 020724 29 INFO dfs.FSNamesystem: BLOCK* NameSystem.delete: blk_2568309208894455676 is added to invalidSet of 10.251.31.160:50010",
+      "flagged_anomalous": false,
+      "false_positive": false
+    },
+    {
+      "id": "hdfs2k_normal_served_block",
+      "raw_log": "081109 213847 2552 INFO dfs.DataNode$DataXceiver: 10.251.194.213:50010 Served block blk_-7724713468912166542 to /10.251.203.80",
+      "flagged_anomalous": false,
+      "false_positive": false
+    },
+    {
+      "id": "hdfs2k_normal_allocate_block",
+      "raw_log": "081109 205035 28 INFO dfs.FSNamesystem: BLOCK* NameSystem.allocateBlock: /user/root/rand/_temporary/_task_200811092030_0001_m_000590_0/part-00590. blk_-1727475099218615100",
+      "flagged_anomalous": false,
+      "false_positive": false
+    },
+    {
+      "id": "hdfs2k_normal_verification_succeeded",
+      "raw_log": "081109 205931 13 INFO dfs.DataBlockScanner: Verification succeeded for blk_-4980916519894289629",
+      "flagged_anomalous": false,
+      "false_positive": false
+    },
+    {
+      "id": "hdfs2k_normal_ask_delete",
+      "raw_log": "081110 212510 19 INFO dfs.FSNamesystem: BLOCK* ask 10.250.18.114:50010 to delete  blk_-5140072410813878235",
+      "flagged_anomalous": false,
+      "false_positive": false
     }
   ]
 }
