@@ -22,8 +22,7 @@ import pandas as pd
 import numpy as np
 
 _ROOT = Path(__file__).resolve().parent.parent
-#sys.path.insert(0, str(_ROOT / "services" / "ingestion_service"))
-#sys.path.insert(0, str(_ROOT / "libs" / "logsage_common"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "services"))
 
 from ingestion_service.app.parsing import parse_file
 from ingestion_service.app.embedding import build_template_miner, deduplicate_logs
