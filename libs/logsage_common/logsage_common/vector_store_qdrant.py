@@ -22,7 +22,7 @@ class QdrantVectorStore:
         self.collection_name = collection_name
         self.dim = dim
         self.model = SentenceTransformer(MODEL_NAME)
-        self.client = QdrantClient(url=QDRANT_URL)
+        self.client = QdrantClient(url=QDRANT_URL, port=None)
 
 
     def embed(self, texts):
