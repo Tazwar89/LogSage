@@ -1,6 +1,7 @@
 [
   {
     "id": "oom_fsnamesystem",
+    "source": "synthetic",
     "raw_log": "081109 203807 222 ERROR dfs.FSNamesystem: java.lang.OutOfMemoryError: Java heap space at org.apache.hadoop.dfs.FSNamesystem.getAdditionalBlock",
     "expected_root_cause": "JVM heap exhaustion (OutOfMemoryError) in FSNamesystem",
     "expected_fix": "Increase JVM heap size via -Xmx flag",
@@ -8,6 +9,7 @@
   },
   {
     "id": "datanode_connection_refused",
+    "source": "synthetic",
     "raw_log": "081109 220204 3111 WARN dfs.DataNode$DataXceiver: 10.251.71.146:50010:Connection refused to DataNode at 10.251.71.200:50010",
     "expected_root_cause": "DataNode unreachable / connection refused",
     "expected_fix": "Check DataNode process status and firewall rules",
@@ -15,6 +17,7 @@
   },
   {
     "id": "security_breach",
+    "source": "synthetic",
     "raw_log": "081109 999999 999 FATAL dfs.DataNode$PacketResponder: CRITICAL SECURITY BREACH detected in block encryption module, immediate shutdown required",
     "expected_root_cause": "Security breach in block encryption / unauthorized access",
     "expected_fix": "Isolate affected node, rotate encryption keys, and audit access logs",
@@ -22,6 +25,7 @@
   },
   {
     "id": "disk_io_error",
+    "source": "synthetic",
     "raw_log": "081109 231045 3812 ERROR dfs.DataNode$DataXceiver: Input/output error while writing block blk_-9081234567890123456 to disk at /data/dn/current",
     "expected_root_cause": "Disk I/O failure on the DataNode's storage volume",
     "expected_fix": "Inspect and replace the failing disk; verify RAID/volume health",
@@ -29,9 +33,154 @@
   },
   {
     "id": "replication_underreplicated",
+    "source": "synthetic",
     "raw_log": "081109 210012 1450 WARN dfs.FSNamesystem: Block blk_1122334455667788990 is under-replicated, replicas=1, expected=3",
     "expected_root_cause": "Insufficient block replication due to DataNode unavailability",
     "expected_fix": "Bring affected DataNodes back online or trigger manual re-replication",
+    "reference_kb_entry": null
+  },
+  {
+    "id": "hdfs2k_xceiver_exception_1",
+    "source": "hdfs_2k",
+    "raw_log": "081109 214043 2561 WARN dfs.DataNode$DataXceiver: 10.251.30.85:50010:Got exception while serving blk_-2918118818249673980 to /10.251.90.64:",
+    "expected_root_cause": "Client dropped/reset the connection to the DataNode mid-transfer while it was serving the block",
+    "expected_fix": "Check client-side timeout and network stability between the two hosts; usually transient unless it recurs for the same DataNode",
+    "reference_kb_entry": null
+  },
+  {
+    "id": "hdfs2k_xceiver_exception_2",
+    "source": "hdfs_2k",
+    "raw_log": "081109 221105 3338 WARN dfs.DataNode$DataXceiver: 10.251.90.64:50010:Got exception while serving blk_-4841792440390267307 to /10.251.90.239:",
+    "expected_root_cause": "Client dropped/reset the connection to the DataNode mid-transfer while it was serving the block",
+    "expected_fix": "Check client-side timeout and network stability between the two hosts; usually transient unless it recurs for the same DataNode",
+    "reference_kb_entry": null
+  },
+  {
+    "id": "hdfs2k_xceiver_exception_3",
+    "source": "hdfs_2k",
+    "raw_log": "081109 224420 3666 WARN dfs.DataNode$DataXceiver: 10.251.73.188:50010:Got exception while serving blk_7517964792804498202 to /10.250.6.191:",
+    "expected_root_cause": "Client dropped/reset the connection to the DataNode mid-transfer while it was serving the block",
+    "expected_fix": "Check client-side timeout and network stability between the two hosts; usually transient unless it recurs for the same DataNode",
+    "reference_kb_entry": null
+  },
+  {
+    "id": "hdfs2k_xceiver_exception_4",
+    "source": "hdfs_2k",
+    "raw_log": "081110 072124 7772 WARN dfs.DataNode$DataXceiver: 10.251.42.246:50010:Got exception while serving blk_-7658293778087733436 to /10.251.30.179:",
+    "expected_root_cause": "Client dropped/reset the connection to the DataNode mid-transfer while it was serving the block",
+    "expected_fix": "Check client-side timeout and network stability between the two hosts; usually transient unless it recurs for the same DataNode",
+    "reference_kb_entry": null
+  },
+  {
+    "id": "hdfs2k_xceiver_exception_5",
+    "source": "hdfs_2k",
+    "raw_log": "081110 082702 8223 WARN dfs.DataNode$DataXceiver: 10.250.15.198:50010:Got exception while serving blk_-1851265222873801714 to /10.251.195.52:",
+    "expected_root_cause": "Client dropped/reset the connection to the DataNode mid-transfer while it was serving the block",
+    "expected_fix": "Check client-side timeout and network stability between the two hosts; usually transient unless it recurs for the same DataNode",
+    "reference_kb_entry": null
+  },
+  {
+    "id": "hdfs2k_xceiver_exception_6",
+    "source": "hdfs_2k",
+    "raw_log": "081110 093020 8827 WARN dfs.DataNode$DataXceiver: 10.251.70.211:50010:Got exception while serving blk_-667933171485085225 to /10.251.203.246:",
+    "expected_root_cause": "Client dropped/reset the connection to the DataNode mid-transfer while it was serving the block",
+    "expected_fix": "Check client-side timeout and network stability between the two hosts; usually transient unless it recurs for the same DataNode",
+    "reference_kb_entry": null
+  },
+  {
+    "id": "hdfs2k_xceiver_exception_7",
+    "source": "hdfs_2k",
+    "raw_log": "081110 131233 11867 WARN dfs.DataNode$DataXceiver: 10.251.197.226:50010:Got exception while serving blk_2101007907134483259 to /10.251.31.242:",
+    "expected_root_cause": "Client dropped/reset the connection to the DataNode mid-transfer while it was serving the block",
+    "expected_fix": "Check client-side timeout and network stability between the two hosts; usually transient unless it recurs for the same DataNode",
+    "reference_kb_entry": null
+  },
+  {
+    "id": "hdfs2k_xceiver_exception_8",
+    "source": "hdfs_2k",
+    "raw_log": "081110 163945 13711 WARN dfs.DataNode$DataXceiver: 10.251.30.101:50010:Got exception while serving blk_-5340885607150360719 to /10.251.30.101:",
+    "expected_root_cause": "Client dropped/reset the connection to the DataNode mid-transfer while it was serving the block",
+    "expected_fix": "Check client-side timeout and network stability between the two hosts; usually transient unless it recurs for the same DataNode",
+    "reference_kb_entry": null
+  },
+  {
+    "id": "hdfs2k_normal_addstoredblock",
+    "source": "hdfs_2k",
+    "raw_log": "081109 204005 35 INFO dfs.FSNamesystem: BLOCK* NameSystem.addStoredBlock: blockMap updated: 10.251.73.220:50010 is added to blk_7128370237687728475 size 67108864",
+    "expected_root_cause": null,
+    "expected_fix": null,
+    "reference_kb_entry": null
+  },
+  {
+    "id": "hdfs2k_normal_packetresponder_terminating",
+    "source": "hdfs_2k",
+    "raw_log": "081109 203615 148 INFO dfs.DataNode$PacketResponder: PacketResponder 1 for block blk_38865049064139660 terminating",
+    "expected_root_cause": null,
+    "expected_fix": null,
+    "reference_kb_entry": null
+  },
+  {
+    "id": "hdfs2k_normal_received_block",
+    "source": "hdfs_2k",
+    "raw_log": "081109 204655 556 INFO dfs.DataNode$PacketResponder: Received block blk_3587508140051953248 of size 67108864 from /10.251.42.84",
+    "expected_root_cause": null,
+    "expected_fix": null,
+    "reference_kb_entry": null
+  },
+  {
+    "id": "hdfs2k_normal_receiving_block",
+    "source": "hdfs_2k",
+    "raw_log": "081109 204815 653 INFO dfs.DataNode$DataXceiver: Receiving block blk_5792489080791696128 src: /10.251.30.6:33145 dest: /10.251.30.6:50010",
+    "expected_root_cause": null,
+    "expected_fix": null,
+    "reference_kb_entry": null
+  },
+  {
+    "id": "hdfs2k_normal_deleting_block",
+    "source": "hdfs_2k",
+    "raw_log": "081109 213837 19 INFO dfs.FSDataset: Deleting block blk_1781953582842324563 file /mnt/hadoop/dfs/data/current/subdir5/blk_1781953582842324563",
+    "expected_root_cause": null,
+    "expected_fix": null,
+    "reference_kb_entry": null
+  },
+  {
+    "id": "hdfs2k_normal_delete_invalidset",
+    "source": "hdfs_2k",
+    "raw_log": "081110 020724 29 INFO dfs.FSNamesystem: BLOCK* NameSystem.delete: blk_2568309208894455676 is added to invalidSet of 10.251.31.160:50010",
+    "expected_root_cause": null,
+    "expected_fix": null,
+    "reference_kb_entry": null
+  },
+  {
+    "id": "hdfs2k_normal_served_block",
+    "source": "hdfs_2k",
+    "raw_log": "081109 213847 2552 INFO dfs.DataNode$DataXceiver: 10.251.194.213:50010 Served block blk_-7724713468912166542 to /10.251.203.80",
+    "expected_root_cause": null,
+    "expected_fix": null,
+    "reference_kb_entry": null
+  },
+  {
+    "id": "hdfs2k_normal_allocate_block",
+    "source": "hdfs_2k",
+    "raw_log": "081109 205035 28 INFO dfs.FSNamesystem: BLOCK* NameSystem.allocateBlock: /user/root/rand/_temporary/_task_200811092030_0001_m_000590_0/part-00590. blk_-1727475099218615100",
+    "expected_root_cause": null,
+    "expected_fix": null,
+    "reference_kb_entry": null
+  },
+  {
+    "id": "hdfs2k_normal_verification_succeeded",
+    "source": "hdfs_2k",
+    "raw_log": "081109 205931 13 INFO dfs.DataBlockScanner: Verification succeeded for blk_-4980916519894289629",
+    "expected_root_cause": null,
+    "expected_fix": null,
+    "reference_kb_entry": null
+  },
+  {
+    "id": "hdfs2k_normal_ask_delete",
+    "source": "hdfs_2k",
+    "raw_log": "081110 212510 19 INFO dfs.FSNamesystem: BLOCK* ask 10.250.18.114:50010 to delete  blk_-5140072410813878235",
+    "expected_root_cause": null,
+    "expected_fix": null,
     "reference_kb_entry": null
   }
 ]
