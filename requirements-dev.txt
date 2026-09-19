@@ -1,13 +1,17 @@
 pytest
+pytest-cov
 fakeredis
 ruff
+httpx
 
 # Needed to import/collect test modules across all services --
 # tests exercise real service code, which imports these directly.
 redis
 qdrant-client
 sentence-transformers
+huggingface_hub
 pydantic
+fastapi
 numpy
 kafka-python
 langgraph
@@ -15,3 +19,4 @@ langchain-core
 openai
 pandas
 scikit-learn
+tensorflow-cpu

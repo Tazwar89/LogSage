@@ -6,14 +6,18 @@ and analysis_service need no logic changes beyond swapping which class they
 instantiate. Unlike the FAISS version, there is no local index file: both
 services talk to the same Qdrant server, so save()/load() become no-ops --
 writes are visible to readers immediately, with no shared PVC/volume needed.
+
+The embedding model is pulled from the Hugging Face Hub via hf_hub, which
+authenticates with HF_TOKEN.
 """
 import os, uuid
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from qdrant_client.http.exceptions import UnexpectedResponse
-from sentence_transformers import SentenceTransformer
 
-MODEL_NAME = "all-MiniLM-L6-v2"
+from .hf_hub import load_embedding_model
+
+MODEL_NAME = os.environ.get("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
 QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 
 
@@ -21,7 +25,7 @@ class QdrantVectorStore:
     def __init__(self, collection_name: str, dim: int = 384):
         self.collection_name = collection_name
         self.dim = dim
-        self.model = SentenceTransformer(MODEL_NAME)
+        self.model = load_embedding_model(MODEL_NAME)
         self.client = QdrantClient(url=QDRANT_URL, port=None)
 
 
