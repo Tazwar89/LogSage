@@ -39,7 +39,12 @@ class QdrantVectorStore:
         ids = list(templates.keys())
         texts = list(templates.values())
 
-        self.client.recreate_collection(
+        # recreate_collection is deprecated in newer qdrant-client releases;
+        # delete + create is the supported equivalent.
+        if self.client.collection_exists(self.collection_name):
+            self.client.delete_collection(self.collection_name)
+
+        self.client.create_collection(
             collection_name=self.collection_name,
             vectors_config=models.VectorParams(size=self.dim, distance=models.Distance.EUCLID),
         )
@@ -87,9 +92,11 @@ class QdrantVectorStore:
 
     def load(self, path=None):
         """Raises if the collection is missing, matching the FAISS version's
-        FileNotFoundError behavior so main.py's existing try/except still works."""
-        try:
-            self.client.get_collection(self.collection_name)
+        FileNotFoundError behavior so main.py's existing try/except still works.
 
-        except UnexpectedResponse as e:
-            raise FileNotFoundError(f"Qdrant collection '{self.collection_name}' does not exist yet") from e
+        Uses collection_exists() rather than get_collection(): get_collection
+        parses the full CollectionInfo, and newer Qdrant servers return null
+        for optimizer_config.max_optimization_threads, which older
+        qdrant-client models reject (client/server version skew)."""
+        if not self.client.collection_exists(self.collection_name):
+            raise FileNotFoundError(f"Qdrant collection '{self.collection_name}' does not exist yet")
