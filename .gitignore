@@ -1,3 +1,7 @@
+eval/*.pkl.gz
+eval/sequence_eval*.json
+*.bin
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -54,7 +58,6 @@ cover/
 # Translations
 *.mo
 *.pot
-*.bin
 
 # Django stuff:
 local_settings.py
