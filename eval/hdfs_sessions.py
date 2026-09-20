@@ -15,56 +15,34 @@ blocks, e.g. the "ask ... to delete blk_a blk_b blk_c" line).
 """
 from __future__ import annotations
 
-import gzip, pickle, re, sys
+import gzip, pickle, sys
 from pathlib import Path
 
 _SERVICES = Path(__file__).resolve().parent.parent / "services"
 sys.path.insert(0, str(_SERVICES))
 
-from ingestion_service.app.parsing import parse_line  # noqa: E402
-
-BLOCK_ID_RE = re.compile(r"blk_-?\d+")
-
-
-def build_masking_miner():
-    from drain3 import TemplateMiner
-    from drain3.masking import MaskingInstruction
-    from drain3.template_miner_config import TemplateMinerConfig
-
-    config = TemplateMinerConfig()
-    config.profiling_enabled = False
-    config.masking_instructions = [
-        MaskingInstruction(r"blk_-?\d+", "BLK"),
-        MaskingInstruction(r"/\S+", "PATH"),
-        MaskingInstruction(r"(\d{1,3}\.){3}\d{1,3}(:\d+)?", "IP"),
-        MaskingInstruction(r"(?<![\w])-?\d+(?![\w])", "NUM"),
-    ]
-
-    return TemplateMiner(config=config)
+from ingestion_service.app.parsing import parse_line
+from logsage_common.sequence_parsing import BLOCK_ID_RE, build_masking_miner
 
 
-def build_block_sequences(
-    log_path: str,
-    max_blocks: int | None = None,
-    progress_every: int = 500_000,
-) -> tuple[dict[str, list[int]], dict[int, str]]:
+def iter_selected_lines(log_path: str, max_blocks: int | None = None, progress_cb=None, progress_every: int = 500_000):
     """
-    Returns ({block_id: [template_id, ...] in log order}, {template_id: template_string}).
-
-    max_blocks keeps only the first N distinct blocks by first appearance;
-    every later line of those blocks is still included, and lines that only
-    mention other blocks skip Drain entirely.
+    Yields (message, [block_ids]) for every line that belongs to a selected
+    block, in log order. max_blocks keeps only the first N distinct blocks by
+    first appearance; every later line of those blocks is still yielded, and
+    lines that only mention other blocks are skipped entirely (so Drain never
+    sees them). Shared by training and the serving-parity check so both
+    process exactly the same lines in exactly the same order.
     """
-    miner = build_masking_miner()
-    sequences: dict[str, list[int]] = {}
+    selected: set[str] = set()
     n_lines = 0
 
     with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
         for raw in f:
             n_lines += 1
 
-            if progress_every and n_lines % progress_every == 0:
-                print(f"  {n_lines:,} lines, {len(sequences):,} blocks, {len(miner.drain.clusters)} templates")
+            if progress_cb and progress_every and n_lines % progress_every == 0:
+                progress_cb(n_lines, len(selected))
 
             parsed = parse_line(raw)
 
@@ -72,28 +50,46 @@ def build_block_sequences(
                 continue
 
             message = parsed["message"]
-            blocks = set(BLOCK_ID_RE.findall(message))
-
-            if not blocks:
-                continue
-
             targets = []
 
-            for b in blocks:
-                if b in sequences:
+            for b in dict.fromkeys(BLOCK_ID_RE.findall(message)):
+                if b in selected:
                     targets.append(b)
 
-                elif max_blocks is None or len(sequences) < max_blocks:
-                    sequences[b] = []
+                elif max_blocks is None or len(selected) < max_blocks:
+                    selected.add(b)
                     targets.append(b)
 
-            if not targets:
-                continue
+            if targets:
+                yield message, targets
 
-            template_id = miner.add_log_message(message)["cluster_id"]
 
-            for b in targets:
-                sequences[b].append(template_id)
+def build_block_sequences(
+    log_path: str,
+    max_blocks: int | None = None,
+    progress_every: int = 500_000,
+    state_path: str | None = None,
+) -> tuple[dict[str, list[int]], dict[int, str]]:
+    """
+    Returns ({block_id: [template_id, ...] in log order}, {template_id: template_string}).
+
+    state_path persists the fitted Drain3 miner (needed to reuse the same
+    template IDs at serving time). See iter_selected_lines for max_blocks.
+    """
+    miner = build_masking_miner(state_path)
+    sequences: dict[str, list[int]] = {}
+
+    def progress(n_lines, n_blocks):
+        print(f"  {n_lines:,} lines, {n_blocks:,} blocks, {len(miner.drain.clusters)} templates")
+
+    for message, targets in iter_selected_lines(log_path, max_blocks, progress, progress_every):
+        template_id = miner.add_log_message(message)["cluster_id"]
+
+        for b in targets:
+            sequences.setdefault(b, []).append(template_id)
+
+    if state_path:
+        miner.save_state("end of training parse")
 
     templates = {c.cluster_id: c.get_template() for c in miner.drain.clusters}
 

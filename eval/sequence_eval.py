@@ -5,7 +5,9 @@ calibrated on held-out normal blocks (no anomaly labels used for tuning), and
 precision / recall / F1 are measured on a test set of the remaining normal
 blocks plus every anomalous block.
 
-Usage (from repo root; needs the FULL HDFS.log, not the 2k sample):
+Usage (from repo root; needs the FULL HDFS.log, not the 2k sample).
+--target-fpr accepts a comma-separated sweep (0.005,0.01,0.02); each detector is
+trained once and re-calibrated per value.
 
     python3 -m eval.sequence_eval \\
         --log /path/to/HDFS_v1/HDFS.log \\
@@ -56,17 +58,22 @@ def confusion_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
             "false_positive_rate": round(fpr, 4), "tp": tp, "fp": fp, "fn": fn, "tn": tn}
 
 
-def evaluate_detector(detector, sequences: dict, splits: dict, target_fpr: float) -> dict:
+def evaluate_detector(detector, sequences: dict, splits: dict, target_fprs: list[float]) -> dict:
+    """Fits once, then calibrates + scores at each target FPR. Returns {str(fpr): metrics}."""
     seq = lambda ids: [sequences[b] for b in ids]  # noqa: E731
 
     detector.fit(seq(splits["train"]))
-    threshold = detector.calibrate(seq(splits["val"]), target_fpr)
-
     test_ids = splits["test_normal"] + splits["test_anomalous"]
+    test_seqs = seq(test_ids)
     y_true = np.array([0] * len(splits["test_normal"]) + [1] * len(splits["test_anomalous"]))
-    y_pred = detector.is_anomalous(seq(test_ids)).astype(int)
+    out = {}
 
-    return {"threshold": float(threshold), **confusion_metrics(y_true, y_pred)}
+    for fpr in target_fprs:
+        threshold = detector.calibrate(seq(splits["val"]), fpr)
+        y_pred = detector.is_anomalous(test_seqs).astype(int)
+        out[str(fpr)] = {"threshold": float(threshold), **confusion_metrics(y_true, y_pred)}
+
+    return out
 
 
 def make_detectors(names: list[str], steps: int, verbose: bool) -> dict:
@@ -88,7 +95,7 @@ def main() -> None:
     p.add_argument("--max-blocks", type=int, default=None)
     p.add_argument("--cache", default=None, help="Path (.pkl.gz) to cache/load parsed block sequences")
     p.add_argument("--detectors", default="pca,deeplog,deeplog-rank")
-    p.add_argument("--target-fpr", type=float, default=0.01)
+    p.add_argument("--target-fpr", default="0.01", help="Comma-separated target FPRs, e.g. 0.005,0.01,0.02 (model is trained once)")
     p.add_argument("--steps", type=int, default=3000)
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--out", default="eval/sequence_eval_results.json")
@@ -121,11 +128,12 @@ def main() -> None:
     if float(np.median(lengths)) < 3:
         raise SystemExit("Median <3 events/block: this looks like the 2k sample, not full sessions. Use the full HDFS.log.")
 
-    results = {"n_templates": len(templates), "splits": {k: len(v) for k, v in splits.items()}, "target_fpr": args.target_fpr}
+    target_fprs = [float(x) for x in args.target_fpr.split(",")]
+    results = {"n_templates": len(templates), "splits": {k: len(v) for k, v in splits.items()}, "target_fprs": target_fprs}
 
     for name, detector in make_detectors(args.detectors.split(","), args.steps, args.verbose).items():
         print(f"\n== {name} ==")
-        results[name] = evaluate_detector(detector, sequences, splits, args.target_fpr)
+        results[name] = evaluate_detector(detector, sequences, splits, target_fprs)
         print(json.dumps(results[name], indent=2))
 
     with open(args.out, "w") as f:

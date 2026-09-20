@@ -30,6 +30,9 @@ kb_store = QdrantVectorStore(collection_name="knowledge_base")
 kb_lookup = {}
 log_store = LogStore()
 
+# Marker set by ingestion_service on entries it flagged via sequence-level (per-block) detection.
+SEQUENCE_DETECTOR = "deeplog-sequence"
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -86,6 +89,21 @@ def _analyze(trace_id: str) -> dict:
 
     if not entry:
         raise HTTPException(status_code=404, detail="trace_id not found")
+
+    if entry.get("detector") == SEQUENCE_DETECTOR:
+        # Flagged upstream at the block (session) level by the sequence model. The per-line
+        # baseline check below cannot judge sequence anomalies (every line of the block is
+        # individually normal), so re-running it here would wrongly clear these entries.
+        result = run_diagnostic_pipeline(entry["message"], kb_store, kb_lookup)
+
+        return {
+            "trace_id": trace_id,
+            "anomalous": True,
+            "detector": SEQUENCE_DETECTOR,
+            "block_id": entry.get("block_id"),
+            "sequence_anomaly_score": entry.get("sequence_anomaly_score"),
+            **result,
+        }
 
     try:
         baseline_store.load()
