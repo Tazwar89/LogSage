@@ -1,4 +1,4 @@
-import pytest
+import types, pytest
 pytest.importorskip("qdrant_client")
 
 from typing import Any, cast
@@ -12,13 +12,14 @@ class FakeClient:
         self.calls = []
 
 
-    def collection_exists(self, name):
-        self.calls.append(("exists", name))
-        return self._exists
+    def get_collections(self):
+        self.calls.append(("exists", None))
+        names = ["baseline"] if self._exists else ["other"]
+        return types.SimpleNamespace(collections=[types.SimpleNamespace(name=n) for n in names])
 
-
+ 
     def get_collection(self, name):
-        raise AssertionError("load() must not call get_collection (parses optimizer_config)")
+        raise AssertionError("must not call get_collection (parses optimizer_config)")
 
 
     def delete_collection(self, name):
@@ -63,3 +64,9 @@ def test_build_index_creates_when_absent():
     s.build_index({1: "a"})
     client = cast(FakeClient, s.client)
     assert [c[0] for c in client.calls] == ["exists", "create", "upsert"]
+
+
+def test_existence_check_does_not_need_collection_exists_attribute():
+    # qdrant-client < 1.8 has no collection_exists(); FakeClient doesn't define it either.
+    assert not hasattr(FakeClient(True), "collection_exists")
+    _store(True).load()

@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -48,4 +49,4 @@ jobs:
       - name: Lint (non-blocking)
         run: |
           pip install ruff
-          ruff check services/ libs/ --exit-zero
+          ruff check services/ libs/ eval/ scripts/ --exit-zero

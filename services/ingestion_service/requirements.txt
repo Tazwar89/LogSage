@@ -3,7 +3,7 @@ uvicorn[standard]
 python-multipart
 drain3
 kafka-python-ng
-qdrant-client
+qdrant-client>=1.10.0,<2.0
 sentence-transformers
 scikit-learn
 numpy

@@ -29,6 +29,20 @@ class QdrantVectorStore:
         self.client = QdrantClient(url=QDRANT_URL, port=None)
 
 
+    def _collection_exists(self) -> bool:
+        """Version-independent existence check.
+
+        Deliberately avoids get_collection() (parses optimizer_config, which
+        newer servers return as null and older clients reject) and
+        collection_exists() (missing from qdrant-client < 1.8).
+        get_collections() only returns collection names, so it works across
+        client/server versions.
+        """
+        names = {c.name for c in self.client.get_collections().collections}
+
+        return self.collection_name in names
+
+
     def embed(self, texts):
         return self.model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
 
@@ -41,7 +55,7 @@ class QdrantVectorStore:
 
         # recreate_collection is deprecated in newer qdrant-client releases;
         # delete + create is the supported equivalent.
-        if self.client.collection_exists(self.collection_name):
+        if self._collection_exists():
             self.client.delete_collection(self.collection_name)
 
         self.client.create_collection(
@@ -92,11 +106,6 @@ class QdrantVectorStore:
 
     def load(self, path=None):
         """Raises if the collection is missing, matching the FAISS version's
-        FileNotFoundError behavior so main.py's existing try/except still works.
-
-        Uses collection_exists() rather than get_collection(): get_collection
-        parses the full CollectionInfo, and newer Qdrant servers return null
-        for optimizer_config.max_optimization_threads, which older
-        qdrant-client models reject (client/server version skew)."""
-        if not self.client.collection_exists(self.collection_name):
+        FileNotFoundError behavior so main.py's existing try/except still works."""
+        if not self._collection_exists():
             raise FileNotFoundError(f"Qdrant collection '{self.collection_name}' does not exist yet")

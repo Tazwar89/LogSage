@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -115,9 +116,44 @@ jobs:
           curl -f http://localhost:8002/analyze/test_anomalous.log-0
           curl -f http://localhost:8002/stats
 
+      - name: Run analysis load-test script
+        run: |
+          chmod +x scripts/load_test_analysis.sh
+          BASE_URL=http://localhost:8002 ./scripts/load_test_analysis.sh test_anomalous.log 1
+
+      # scripts/anomaly_report.py runs on the runner (not inside a container)
+      # because it imports `ingestion_service.app.*`, which only exists as a
+      # package in the repo checkout -- inside the ingestion image the same
+      # code is packaged as `app.*`. The baseline was already uploaded to the
+      # compose Qdrant (port 6333 is published) by the smoke-test step above.
+      - name: Set up Python for anomaly report
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install anomaly report dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # CPU-only torch first, so sentence-transformers doesn't pull the multi-GB CUDA build.
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r services/ingestion_service/requirements.txt pandas
+          pip install -e libs/logsage_common
+
+      - name: Run anomaly report script
+        run: python scripts/anomaly_report.py services/analysis_service/data/HDFS_2k.log
+        env:
+          QDRANT_URL: http://localhost:6333
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
       - name: Dump logs on failure
         if: failure()
         run: docker compose logs
+
+      - name: Show installed client versions on failure
+        if: failure()
+        run: |
+          docker compose exec -T analysis_service pip list 2>/dev/null | grep -i -E "qdrant|pydantic|sentence" || true
+          docker compose images
 
       - name: Tear down
         if: always()

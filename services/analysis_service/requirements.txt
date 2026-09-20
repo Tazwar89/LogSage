@@ -5,4 +5,4 @@ langgraph
 langchain-core
 pandas
 scikit-learn
-qdrant-client
+qdrant-client>=1.10.0,<2.0
