@@ -17,11 +17,11 @@ stand-in for a representative run: https://github.com/logpai/loghub
 """
 import sys
 from pathlib import Path
-
+from dotenv import load_dotenv
 import pandas as pd
 import numpy as np
 
-np.load.dotenv()  # load .env in repo root so QDRANT_URL is available to QdrantVectorStore
+load_dotenv()  # load .env in repo root so QDRANT_URL is available to QdrantVectorStore
 
 _ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "services"))

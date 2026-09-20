@@ -1,5 +1,6 @@
 eval/*.pkl.gz
 eval/sequence_eval*.json
+eval/anomaly_report.csv
 *.bin
 
 # Byte-compiled / optimized / DLL files
