@@ -1,0 +1,43 @@
+{
+  "n_templates": 39,
+  "splits": {
+    "train": 47548,
+    "val": 9509,
+    "test_normal": 38040,
+    "test_anomalous": 4903
+  },
+  "target_fpr": 0.01,
+  "pca": {
+    "threshold": 5.210204946819087,
+    "precision": 0.989,
+    "recall": 0.5662,
+    "f1": 0.7201,
+    "false_positive_rate": 0.0008,
+    "tp": 2776,
+    "fp": 31,
+    "fn": 2127,
+    "tn": 38009
+  },
+  "deeplog": {
+    "threshold": 2.845602245330812,
+    "precision": 0.9175,
+    "recall": 0.9682,
+    "f1": 0.9421,
+    "false_positive_rate": 0.0112,
+    "tp": 4747,
+    "fp": 427,
+    "fn": 156,
+    "tn": 37613
+  },
+  "deeplog-rank": {
+    "threshold": 3.0,
+    "precision": 0.992,
+    "recall": 0.681,
+    "f1": 0.8076,
+    "false_positive_rate": 0.0007,
+    "tp": 3339,
+    "fp": 27,
+    "fn": 1564,
+    "tn": 38013
+  }
+}
