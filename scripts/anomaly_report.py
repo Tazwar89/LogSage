@@ -15,11 +15,13 @@ Usage (from repo root, with a real baseline already uploaded to Qdrant):
 The public Loghub HDFS_2k.log sample (2,000 real HDFS log lines) is a good
 stand-in for a representative run: https://github.com/logpai/loghub
 """
-import sys, os
+import sys
 from pathlib import Path
 
 import pandas as pd
 import numpy as np
+
+np.load.dotenv()  # load .env in repo root so QDRANT_URL is available to QdrantVectorStore
 
 _ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "services"))
