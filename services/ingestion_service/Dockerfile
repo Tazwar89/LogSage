@@ -2,7 +2,7 @@ FROM ghcr.io/tazwar89/logsage/base:latest
 WORKDIR /app
 
 COPY services/ingestion_service/requirements.txt .
-RUN uv pip install --system --no-cache -r requirements.txt
+RUN uv pip install --system --no-cache --index-strategy unsafe-best-match -r requirements.txt
 
 COPY services/ingestion_service/app ./app
 
