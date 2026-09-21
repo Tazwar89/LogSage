@@ -3,6 +3,16 @@ eval/sequence_eval*.json
 eval/anomaly_report.csv
 *.bin
 
+# Local scratch data
+HDFS_2k.baseline.log
+HDFS_2k.holdout.log
+HDFS.log
+
+# Keep headline results even though eval/sequence_eval*.json is ignored
+!eval/sequence_eval_full.json
+!eval/sequence_eval_full_pca.json
+!eval/sequence_eval_full_sweep.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

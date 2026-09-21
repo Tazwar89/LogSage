@@ -1,0 +1,32 @@
+{
+  "n_templates": 45,
+  "splits": {
+    "train": 279111,
+    "val": 55822,
+    "test_normal": 223290,
+    "test_anomalous": 16838
+  },
+  "target_fpr": 0.01,
+  "deeplog": {
+    "threshold": 2.384550094604492,
+    "precision": 0.8878,
+    "recall": 0.9843,
+    "f1": 0.9336,
+    "false_positive_rate": 0.0094,
+    "tp": 16573,
+    "fp": 2094,
+    "fn": 265,
+    "tn": 221196
+  },
+  "deeplog-rank": {
+    "threshold": 4.0,
+    "precision": 0.9519,
+    "recall": 0.8754,
+    "f1": 0.912,
+    "false_positive_rate": 0.0033,
+    "tp": 14740,
+    "fp": 745,
+    "fn": 2098,
+    "tn": 222545
+  }
+}
