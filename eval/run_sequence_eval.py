@@ -119,22 +119,65 @@ def deterministic_checks(context: str, analysis: dict) -> dict:
 
 
 def judge(context: str, analysis: dict, model: str) -> dict:
-    from openai import OpenAI
+    import time
+    from openai import OpenAI, RateLimitError, BadRequestError
 
     client = OpenAI(
         api_key=os.environ.get("GROQ_API_KEY", os.environ.get("OPENAI_API_KEY", "")),
         base_url=os.environ.get("LLM_BASE_URL", "https://api.groq.com/openai/v1"),
     )
     prompt = JUDGE_PROMPT.format(
-        context=context, root_cause=analysis.get("root_cause", ""), fix=analysis.get("suggested_fix", "")
+        context=context, 
+        root_cause=analysis.get("root_cause", ""), 
+        fix=analysis.get("suggested_fix", "")
     )
-    resp = client.chat.completions.create(
-        model=model, temperature=0, response_format={"type": "json_object"},
-        messages=[{"role": "user", "content": prompt}],
-    )
+
+    # Track whether to use the extra reasoning body param
+    use_reasoning_effort = True
+
+    for attempt in range(6):
+        try:
+            try:
+                if use_reasoning_effort:
+                    resp = client.chat.completions.create(
+                        model=model,
+                        temperature=0,
+                        max_tokens=300,
+                        response_format={"type": "json_object"},
+                        messages=[{"role": "user", "content": prompt}],
+                        extra_body={"reasoning_effort": "none"} # Explicitly pass the parameter
+                    )
+                else:
+                    resp = client.chat.completions.create(
+                        model=model,
+                        temperature=0,
+                        max_tokens=300,
+                        response_format={"type": "json_object"},
+                        messages=[{"role": "user", "content": prompt}]
+                    )
+
+            except BadRequestError:
+                use_reasoning_effort = False  # Switch mode flag; retry without reasoning_effort
+                resp = client.chat.completions.create(
+                    model=model,
+                    temperature=0,
+                    max_tokens=300,
+                    response_format={"type": "json_object"},
+                    messages=[{"role": "user", "content": prompt}]
+                )
+
+            break  # Break the retry loop on a successful request
+
+        except RateLimitError:
+            time.sleep(15 * (attempt + 1))
+
+    else:
+        raise RuntimeError("Judge rate-limited after 6 retries")
+
     out = json.loads(resp.choices[0].message.content or "{}")
     out["score"] = float(out.get("score", 0.0))
     out.setdefault("rationale", "")
+    time.sleep(3)  # pace calls under the per-minute output-token cap
 
     return out
 
