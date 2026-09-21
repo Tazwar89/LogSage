@@ -194,15 +194,18 @@ def main() -> None:
     args = p.parse_args()
 
     judge_model = os.getenv("JUDGE_MODEL", DEFAULT_JUDGE)
+    gen_model = os.getenv("LLM_MODEL", "openai/gpt-oss-20b")
 
     if not args.dry_run:
         from openai import OpenAI
-        OpenAI(
+        available = {m.id for m in OpenAI(
             api_key=os.environ.get("GROQ_API_KEY", os.environ.get("OPENAI_API_KEY", "")),
             base_url=os.environ.get("LLM_BASE_URL", "https://api.groq.com/openai/v1"),
-        ).models.retrieve(judge_model)
+        ).models.list().data}
 
-    gen_model = os.getenv("LLM_MODEL", "openai/gpt-oss-20b")
+        for name in (judge_model, gen_model):
+            if name not in available:
+                raise SystemExit(f"Model '{name}' is not available to this API key.")
 
     if judge_model == gen_model and not args.dry_run:
         raise SystemExit(f"JUDGE_MODEL must differ from LLM_MODEL (both '{gen_model}').")
