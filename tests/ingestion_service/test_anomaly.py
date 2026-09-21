@@ -1,6 +1,4 @@
 import numpy as np
-import pytest
-
 from ingestion_service.app.anomaly import BaselineAnomalyDetector, filter_anomalous_logs
 
 

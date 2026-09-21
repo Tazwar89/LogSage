@@ -4,8 +4,11 @@ REST contract tests for analysis_service.
 Heavy dependencies (Qdrant, Redis, embedding model, LLM pipeline) are stubbed
 in sys.modules before main.py is imported, so these run instantly and offline.
 """
-import importlib, sys, types, pytest
+import importlib
+import sys
+import types
 
+import pytest
 from fastapi.testclient import TestClient
 
 
@@ -41,7 +44,7 @@ def api(monkeypatch):
         "logsage_common.vector_store_qdrant": types.SimpleNamespace(QdrantVectorStore=FakeQdrant),
         "logsage_common.log_store": types.SimpleNamespace(LogStore=FakeLogStore),
         "analysis_service.app.rag": types.SimpleNamespace(
-            load_knowledge_base=lambda: [], build_kb_index=lambda s, e: {}, retrieve_context=lambda *a, **k: []
+            load_knowledge_base=list, build_kb_index=lambda s, e: {}, retrieve_context=lambda *a, **k: []
         ),
         "analysis_service.app.agentic_pipeline": types.SimpleNamespace(
             run_diagnostic_pipeline=lambda msg, store, lookup: {"root_cause": "disk", "suggested_fix": "replace disk"}

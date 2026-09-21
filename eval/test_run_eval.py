@@ -20,8 +20,8 @@ def test_golden_dataset_is_well_formed():
     assert negatives, "dataset should contain at least one negative (known-normal) case"
 
     for case in cases:
-        assert "id" in case and case["id"]
-        assert "raw_log" in case and case["raw_log"]
+        assert case.get("id")
+        assert case.get("raw_log")
         assert "source" in case and case["source"] in ("synthetic", "hdfs_2k")
 
         if case["expected_root_cause"] is not None:

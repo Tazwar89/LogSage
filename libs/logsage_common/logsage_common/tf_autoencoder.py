@@ -56,7 +56,7 @@ class AutoencoderAnomalyDetector:
         return model
 
 
-    def fit(self, baseline_vectors: np.ndarray) -> "AutoencoderAnomalyDetector":
+    def fit(self, baseline_vectors: np.ndarray) -> AutoencoderAnomalyDetector:
         vectors = np.asarray(baseline_vectors, dtype="float32")
 
         if vectors.ndim != 2 or vectors.shape[0] < 2:
@@ -110,7 +110,7 @@ class AutoencoderAnomalyDetector:
 
 
     @classmethod
-    def load(cls, directory: str) -> "AutoencoderAnomalyDetector":
+    def load(cls, directory: str) -> AutoencoderAnomalyDetector:
         tf = _tf()
         detector = cls()
         detector._model = tf.keras.models.load_model(os.path.join(directory, "model.keras"))

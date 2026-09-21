@@ -1,8 +1,6 @@
 """Tests for app/analytics.py"""
 import numpy as np
-import pytest
-
-from analysis_service.app.analytics import compute_log_stats, IsolationForestDetector
+from analysis_service.app.analytics import IsolationForestDetector, compute_log_stats
 
 
 class TestComputeLogStats:

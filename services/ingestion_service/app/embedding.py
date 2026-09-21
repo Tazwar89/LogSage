@@ -1,6 +1,7 @@
 from drain3 import TemplateMiner
-from drain3.template_miner_config import TemplateMinerConfig
 from drain3.file_persistence import FilePersistence
+from drain3.template_miner_config import TemplateMinerConfig
+
 
 def build_template_miner(state_path="drain3_state.bin"):
     persistence = FilePersistence(state_path)

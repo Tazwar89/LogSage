@@ -1,8 +1,12 @@
-import random, pytest
+import random
 
+import pytest
 from ingestion_service.app.parsing import parse_line
-from ingestion_service.app.sequence import MAX_CONTEXT_LINES, SequenceScorer, build_block_entry
-
+from ingestion_service.app.sequence import (
+    MAX_CONTEXT_LINES,
+    SequenceScorer,
+    build_block_entry,
+)
 from logsage_common.sequence_anomaly import DeepLogDetector
 from logsage_common.sequence_parsing import (
     UNKNOWN_TEMPLATE_ID,

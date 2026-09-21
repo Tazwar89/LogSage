@@ -11,7 +11,6 @@ import random
 
 import numpy as np
 import pytest
-
 from logsage_common.sequence_anomaly import CountVectorPCADetector, DeepLogDetector
 
 ALLOC, RECV, RESP, RCVD, STORED, DELETE, UNSEEN = 1, 2, 3, 4, 5, 6, 99

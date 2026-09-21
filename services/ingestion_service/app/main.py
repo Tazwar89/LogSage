@@ -17,16 +17,20 @@ Responsibilities:
 - GET /sequence/status: whether a trained sequence model is loaded/available.
 """
 import os
+
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
+from logsage_common.vector_store_qdrant import QdrantVectorStore
 
-from .parsing import parse_line
+from .anomaly import (
+    BaselineAnomalyDetector,
+    fetch_baseline_vectors,
+    filter_anomalous_logs,
+)
 from .embedding import build_template_miner, deduplicate_logs, get_unique_templates
 from .kafka_producer import get_producer, publish_batch
-from .anomaly import BaselineAnomalyDetector, fetch_baseline_vectors, filter_anomalous_logs
+from .parsing import parse_line
 from .sequence import SequenceScorer, build_block_entry
-
-from logsage_common.vector_store_qdrant import QdrantVectorStore
 
 app = FastAPI(title="LogSage Ingestion Service")
 

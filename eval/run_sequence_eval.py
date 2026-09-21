@@ -28,7 +28,12 @@ Usage (repo root):
 """
 from __future__ import annotations
 
-import argparse, json, math, os, random, sys
+import argparse
+import json
+import math
+import os
+import random
+import sys
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -36,10 +41,14 @@ sys.path.insert(0, str(_ROOT / "services"))
 sys.path.insert(0, str(_ROOT / "libs" / "logsage_common"))
 sys.path.insert(0, str(_ROOT))
 
-from eval.precision_recall import load_ground_truth  # noqa: E402
-from ingestion_service.app.parsing import parse_line  # noqa: E402
-from ingestion_service.app.sequence import SequenceScorer, build_block_entry  # noqa: E402
-from logsage_common.sequence_parsing import BLOCK_ID_RE  # noqa: E402
+from ingestion_service.app.parsing import parse_line
+from ingestion_service.app.sequence import (
+    SequenceScorer,
+    build_block_entry,
+)
+from logsage_common.sequence_parsing import BLOCK_ID_RE
+
+from eval.precision_recall import load_ground_truth
 
 RESULTS_PATH = Path(__file__).parent / "sequence_judge_results.json"
 DEFAULT_JUDGE = "llama-3.3-70b-versatile"
@@ -106,7 +115,7 @@ def collect_lines(log_path: str, selected: set[str]) -> list[dict]:
 
 
 def deterministic_checks(context: str, analysis: dict) -> dict:
-    from analysis_service.app.agentic_pipeline import _PATH_RE, _DESTRUCTIVE_RE
+    from analysis_service.app.agentic_pipeline import _DESTRUCTIVE_RE, _PATH_RE
 
     fix = str(analysis.get("suggested_fix", ""))
     ungrounded = [p for p in _PATH_RE.findall(fix) if p.rstrip(".,;:)") not in context]
@@ -120,7 +129,8 @@ def deterministic_checks(context: str, analysis: dict) -> dict:
 
 def judge(context: str, analysis: dict, model: str) -> dict:
     import time
-    from openai import OpenAI, RateLimitError, BadRequestError
+
+    from openai import BadRequestError, OpenAI, RateLimitError
 
     client = OpenAI(
         api_key=os.environ.get("GROQ_API_KEY", os.environ.get("OPENAI_API_KEY", "")),

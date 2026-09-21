@@ -13,7 +13,8 @@ report precision / recall / F1 / false-positive rate on the held-out mix.
 """
 from __future__ import annotations
 
-import argparse, json
+import argparse
+import json
 
 import numpy as np
 
@@ -48,7 +49,7 @@ def evaluate(train: np.ndarray, normal_holdout: np.ndarray, anomalous: np.ndarra
         "autoencoder": _metrics(y, ae.is_anomalous(x).astype(int)),
         "autoencoder_threshold": ae.threshold,
         "knn_threshold": knn.threshold,
-        "n_train": int(len(train)), "n_normal_holdout": int(len(normal_holdout)), "n_anomalous": int(len(anomalous)),
+        "n_train": len(train), "n_normal_holdout": len(normal_holdout), "n_anomalous": len(anomalous),
     }
 
 

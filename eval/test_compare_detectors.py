@@ -1,6 +1,8 @@
-import sys, pytest
+import sys
 from pathlib import Path
+
 import numpy as np
+import pytest
 
 pytest.importorskip("tensorflow")
 sys.path.insert(0, str(Path(__file__).parent.parent / "libs" / "logsage_common"))

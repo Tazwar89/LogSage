@@ -35,7 +35,9 @@ cases (unchanged meaning from before), while false_positive_rate is
 computed only over negative cases -- report both, not one folded into
 the other.
 """
-import os, sys, json
+import json
+import os
+import sys
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parent.parent
@@ -45,8 +47,9 @@ sys.path.insert(0, str(_ROOT / "services"))
 sys.path.insert(0, str(_ROOT / "libs" / "logsage_common"))
 
 from analysis_service.app.agentic_pipeline import run_diagnostic_pipeline
-from analysis_service.app.rag import load_knowledge_base, build_kb_index
 from analysis_service.app.anomaly import is_anomalous
+from analysis_service.app.rag import build_kb_index, load_knowledge_base
+
 from .judge import judge_diagnosis
 
 MOCK_LLM = os.getenv("MOCK_LLM", "false").lower() == "true"

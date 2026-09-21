@@ -9,21 +9,20 @@ tests and clients keep working.
 Log ingestion into Redis is handled entirely by consumer_service -- this
 service only reads from Redis, never writes to it.
 """
-import os, secrets
+import os
+import secrets
 from contextlib import asynccontextmanager
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Query
+from logsage_common.log_store import LogStore
+from logsage_common.vector_store_qdrant import QdrantVectorStore
 from pydantic import BaseModel, ConfigDict
 
-from .anomaly import is_anomalous
-from .rag import load_knowledge_base, build_kb_index
 from .agentic_pipeline import run_diagnostic_pipeline
 from .analytics import compute_log_stats
-
-from logsage_common.vector_store_qdrant import QdrantVectorStore
-from logsage_common.log_store import LogStore
-
+from .anomaly import is_anomalous
+from .rag import build_kb_index, load_knowledge_base
 
 baseline_store = QdrantVectorStore(collection_name="baseline")
 kb_store = QdrantVectorStore(collection_name="knowledge_base")
@@ -55,7 +54,7 @@ class AnalyzeResponse(BaseModel):
 
     trace_id: str
     anomalous: bool
-    nearest_match: Optional[dict[str, Any]] = None
+    nearest_match: dict[str, Any] | None = None
 
 
 class LogListResponse(BaseModel):
@@ -67,7 +66,7 @@ class LogListResponse(BaseModel):
 
 # ---------- Auth ----------
 
-def require_api_key(x_api_key: Optional[str] = Header(default=None)):
+def require_api_key(x_api_key: str | None = Header(default=None)):
     """Enforced only when LOGSAGE_API_KEY is set, so local/CI runs stay open."""
     expected = os.getenv("LOGSAGE_API_KEY")
 

@@ -9,7 +9,8 @@ ANOMALY_DETECTOR=autoencoder: TensorFlow autoencoder. If AUTOENCODER_DIR
 points at a saved detector it is loaded; otherwise one is trained on the
 current baseline and cached until the baseline changes.
 """
-import hashlib, os
+import hashlib
+import os
 
 from logsage_common.anomaly import BaselineAnomalyDetector, fetch_baseline_vectors
 

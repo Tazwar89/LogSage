@@ -10,7 +10,8 @@ independently of the diagnostic pipeline itself.
 Respects the same MOCK_LLM / GROQ_API_KEY / LLM_BASE_URL conventions as
 agentic_pipeline.py so `MOCK_LLM=true` runs the whole harness offline.
 """
-import os, json
+import json
+import os
 
 from openai import OpenAI
 

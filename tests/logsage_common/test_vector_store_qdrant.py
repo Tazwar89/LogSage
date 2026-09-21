@@ -1,4 +1,7 @@
-import types, pytest
+import types
+
+import pytest
+
 pytest.importorskip("qdrant_client")
 
 from typing import Any, cast

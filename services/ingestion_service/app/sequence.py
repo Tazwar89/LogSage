@@ -18,7 +18,10 @@ split across two uploads looks truncated (missing END) and will be flagged.
 """
 from __future__ import annotations
 
-import json, logging, os, threading
+import json
+import logging
+import os
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -127,7 +130,7 @@ def build_block_entry(parsed_logs: list[dict], result: BlockResult) -> dict:
     context, which is what the LLM diagnostic pipeline reads.
     """
     lines = [parsed_logs[i] for i in result.line_indices]
-    fmt = lambda l: f"[{l.get('level', '')}] {l.get('component', '')}: {l['message']}"  # noqa: E731
+    fmt = lambda l: f"[{l.get('level', '')}] {l.get('component', '')}: {l['message']}"
 
     if len(lines) > MAX_CONTEXT_LINES:
         half = MAX_CONTEXT_LINES // 2

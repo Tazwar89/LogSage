@@ -6,15 +6,16 @@ offline, deterministically, and without spending API credits. They verify
 the graph wiring and state propagation across nodes, not the LLM's actual
 reasoning quality.
 """
-import json, pytest
-from unittest.mock import patch, MagicMock
+import json
+from unittest.mock import MagicMock, patch
 
+import pytest
 from analysis_service.app.agentic_pipeline import (
+    DiagnosticState,
     build_diagnostic_graph,
+    report_node,
     run_diagnostic_pipeline,
     triage_node,
-    report_node,
-    DiagnosticState
 )
 
 

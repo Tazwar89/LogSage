@@ -5,18 +5,20 @@ A standalone, non-HTTP microservice. Its only job is consuming from the
 Kafka log-ingestion topic (published by ingestion_service) and writing
 each entry into Redis (read by analysis_service).
 """
-import json, logging, time
+import json
+import logging
+import time
 from typing import Any, cast
+
 from kafka import KafkaConsumer
 from kafka.errors import KafkaError
-
-from logsage_common.log_store import LogStore
 from logsage_common.kafka_config import (
-    KAFKA_BOOTSTRAP_SERVERS,
-    LOG_INGESTION_TOPIC,
     CONSUMER_GROUP_ID,
+    KAFKA_BOOTSTRAP_SERVERS,
     KAFKA_SECURITY_KWARGS,
+    LOG_INGESTION_TOPIC,
 )
+from logsage_common.log_store import LogStore
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("consumer_service")

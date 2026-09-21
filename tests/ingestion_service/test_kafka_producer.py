@@ -5,9 +5,13 @@ KafkaProducer is mocked throughout -- these verify message construction,
 serialization, and error handling, not connectivity to a real broker.
 """
 from unittest.mock import MagicMock
-from kafka.errors import KafkaError
 
-from ingestion_service.app.kafka_producer import publish_log_entry, publish_batch, LOG_INGESTION_TOPIC
+from ingestion_service.app.kafka_producer import (
+    LOG_INGESTION_TOPIC,
+    publish_batch,
+    publish_log_entry,
+)
+from kafka.errors import KafkaError
 
 
 class TestPublishLogEntry:

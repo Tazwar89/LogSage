@@ -17,18 +17,22 @@ stand-in for a representative run: https://github.com/logpai/loghub
 """
 import sys
 from pathlib import Path
-from dotenv import load_dotenv
-import pandas as pd
+
 import numpy as np
+import pandas as pd
+from dotenv import load_dotenv
 
 load_dotenv()  # load .env in repo root so QDRANT_URL is available to QdrantVectorStore
 
 _ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "services"))
 
-from ingestion_service.app.parsing import parse_file
+from ingestion_service.app.anomaly import (
+    BaselineAnomalyDetector,
+    fetch_baseline_vectors,
+)
 from ingestion_service.app.embedding import build_template_miner, deduplicate_logs
-from ingestion_service.app.anomaly import BaselineAnomalyDetector, fetch_baseline_vectors
+from ingestion_service.app.parsing import parse_file
 from logsage_common.vector_store_qdrant import QdrantVectorStore
 
 
@@ -63,7 +67,7 @@ def print_summary(df: pd.DataFrame):
     rate = anomalous / total if total else 0.0
 
     print(f"\nParsed {total} log lines")
-    print(f"Baseline templates fitted on: (see detector.threshold below)")
+    print("Baseline templates fitted on: (see detector.threshold below)")
     print(f"Anomalous: {anomalous} ({rate*100:.1f}%)")
     print(f"Suppressed as normal (not forwarded to Kafka/GenAI): {total - anomalous} ({(1-rate)*100:.1f}%)")
 

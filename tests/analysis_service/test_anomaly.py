@@ -8,7 +8,6 @@ with embed()/query().
 """
 import numpy as np
 import pytest
-
 from analysis_service.app import anomaly
 
 

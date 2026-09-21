@@ -26,7 +26,10 @@ serving would see a different vocabulary than the model learned.
 """
 from __future__ import annotations
 
-import argparse, datetime, json, random, sys
+import argparse
+import datetime
+import json
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -35,11 +38,16 @@ _ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_ROOT))
 sys.path.insert(0, str(_ROOT / "services"))
 
-from eval.hdfs_sessions import build_block_sequences, iter_selected_lines  # noqa: E402
-from eval.precision_recall import load_ground_truth  # noqa: E402
-from eval.sequence_eval import confusion_metrics, split_blocks  # noqa: E402
-from logsage_common.sequence_anomaly import DeepLogDetector  # noqa: E402
-from logsage_common.sequence_parsing import UNKNOWN_TEMPLATE_ID, build_masking_miner, match_template_id  # noqa: E402
+from logsage_common.sequence_anomaly import DeepLogDetector
+from logsage_common.sequence_parsing import (
+    UNKNOWN_TEMPLATE_ID,
+    build_masking_miner,
+    match_template_id,
+)
+
+from eval.hdfs_sessions import build_block_sequences, iter_selected_lines
+from eval.precision_recall import load_ground_truth
+from eval.sequence_eval import confusion_metrics, split_blocks
 
 
 def parity_check(log_path: str, state_path: str, n_lines: int, max_blocks: int | None) -> dict:
@@ -86,7 +94,7 @@ def main() -> None:
 
     labels = load_ground_truth(Path(args.labels))
     splits = split_blocks(sequences, labels, train_frac=args.train_frac, val_frac=args.val_frac, seed=args.seed)
-    seq = lambda ids: [sequences[b] for b in ids]  # noqa: E731
+    seq = lambda ids: [sequences[b] for b in ids]
     sizes = {k: len(v) for k, v in splits.items()}
     print(f"{len(sequences):,} blocks, {len(templates)} templates, splits={sizes}")
 

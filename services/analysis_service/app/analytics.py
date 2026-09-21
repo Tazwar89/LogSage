@@ -9,9 +9,9 @@ Analytics and a secondary ML-based anomaly detector.
   techniques solving the same problem is a stronger portfolio signal than
   one.
 """
+import numpy as np
 import pandas as pd
 from sklearn.ensemble import IsolationForest
-import numpy as np
 
 
 def compute_log_stats(entries: list[dict]) -> dict:

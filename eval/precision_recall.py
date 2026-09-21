@@ -28,7 +28,9 @@ Usage:
         --report eval/anomaly_report.csv \
         --labels /path/to/anomaly_label.csv
 """
-import argparse, csv, re
+import argparse
+import csv
+import re
 from pathlib import Path
 
 BLOCK_ID_RE = re.compile(r"blk_-?\d+")

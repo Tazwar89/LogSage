@@ -10,16 +10,17 @@ This decouples ingestion throughput from analysis/storage latency -- large
 log files no longer block the HTTP request while every line is written to
 Redis one by one.
 """
-import json, logging, time
+import json
+import logging
+import time
 from typing import Any, cast
 
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
-
 from logsage_common.kafka_config import (
     KAFKA_BOOTSTRAP_SERVERS,
-    LOG_INGESTION_TOPIC,
     KAFKA_SECURITY_KWARGS,
+    LOG_INGESTION_TOPIC,
 )
 
 logger = logging.getLogger("ingestion_service")

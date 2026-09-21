@@ -10,7 +10,9 @@ writes are visible to readers immediately, with no shared PVC/volume needed.
 The embedding model is pulled from the Hugging Face Hub via hf_hub, which
 authenticates with HF_TOKEN.
 """
-import os, uuid
+import os
+import uuid
+
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from qdrant_client.http.exceptions import UnexpectedResponse

@@ -20,7 +20,9 @@ block sequences so re-runs (different detectors/hyperparameters) are fast.
 """
 from __future__ import annotations
 
-import argparse, json, random
+import argparse
+import json
+import random
 from pathlib import Path
 
 import numpy as np
@@ -60,7 +62,7 @@ def confusion_metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
 
 def evaluate_detector(detector, sequences: dict, splits: dict, target_fprs: list[float]) -> dict:
     """Fits once, then calibrates + scores at each target FPR. Returns {str(fpr): metrics}."""
-    seq = lambda ids: [sequences[b] for b in ids]  # noqa: E731
+    seq = lambda ids: [sequences[b] for b in ids]
 
     detector.fit(seq(splits["train"]))
     test_ids = splits["test_normal"] + splits["test_anomalous"]

@@ -1,6 +1,9 @@
 # scripts/split_baseline_holdout.py
-import re, sys, random
+import random
+import re
+import sys
 from collections import defaultdict
+
 import pandas as pd
 
 BLOCK_RE = re.compile(r"blk_-?\d+")

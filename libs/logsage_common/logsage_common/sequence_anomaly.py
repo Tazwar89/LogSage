@@ -39,7 +39,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
 import numpy as np
 from sklearn.decomposition import PCA
@@ -75,7 +75,7 @@ class CountVectorPCADetector:
         return x
 
 
-    def fit(self, train_seqs: Sequence[Seq]) -> "CountVectorPCADetector":
+    def fit(self, train_seqs: Sequence[Seq]) -> CountVectorPCADetector:
         if len(train_seqs) < 2:
             raise ValueError("Need at least 2 training sequences")
 
@@ -192,7 +192,7 @@ class DeepLogDetector:
 
 
     # ---- training -------------------------------------------------------
-    def fit(self, train_seqs: Sequence[Seq]) -> "DeepLogDetector":
+    def fit(self, train_seqs: Sequence[Seq]) -> DeepLogDetector:
         import torch
 
         if not train_seqs:
@@ -344,7 +344,7 @@ class DeepLogDetector:
 
 
     @classmethod
-    def load(cls, path: str, device: str = "cpu") -> "DeepLogDetector":
+    def load(cls, path: str, device: str = "cpu") -> DeepLogDetector:
         import torch
 
         blob = torch.load(path, map_location=device, weights_only=True)

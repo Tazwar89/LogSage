@@ -16,13 +16,16 @@ Agentic diagnostic pipeline using LangGraph.
 State is passed between nodes via a typed dict, matching LangGraph's
 standard state-graph pattern.
 """
-import os, json, re, time
+import json
+import os
+import re
+import time
 from functools import partial
-from typing import TypedDict, List, Dict, Any
-from langgraph.graph import StateGraph, END
-from openai import OpenAI, RateLimitError
+from typing import Any, TypedDict
 
+from langgraph.graph import END, StateGraph
 from logsage_common.redact import redact
+from openai import OpenAI, RateLimitError
 
 LLM_MODEL = os.getenv("LLM_MODEL", "openai/gpt-oss-20b")
 MOCK_LLM = os.getenv("MOCK_LLM", "false").lower() == "true"
@@ -41,9 +44,9 @@ _DESTRUCTIVE_RE = re.compile(
 class DiagnosticState(TypedDict):
     raw_log: str
     redacted_log: str
-    entities: Dict[str, Any]
-    retrieved_context: List[Dict[str, str]]
-    final_analysis: Dict[str, Any]
+    entities: dict[str, Any]
+    retrieved_context: list[dict[str, str]]
+    final_analysis: dict[str, Any]
 
 
 def _get_client():

@@ -4,9 +4,9 @@ Tests for app/parsing.py
 Covers: well-formed HDFS-style log lines, malformed lines, empty input,
 and the file-level batch parser skipping bad lines without crashing.
 """
-import json, pytest
+import json
 
-from ingestion_service.app.parsing import parse_line, parse_file, save_json
+from ingestion_service.app.parsing import parse_file, parse_line, save_json
 
 
 class TestParseLine:

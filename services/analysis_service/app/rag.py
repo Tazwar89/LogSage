@@ -1,4 +1,5 @@
-import json, os
+import json
+import os
 
 # Qdrant collections use EUCLID distance on normalized embeddings (range 0-2; lower = closer).
 # Entries farther than this are dropped so unrelated KB items never reach the LLM.

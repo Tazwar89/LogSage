@@ -15,7 +15,9 @@ blocks, e.g. the "ask ... to delete blk_a blk_b blk_c" line).
 """
 from __future__ import annotations
 
-import gzip, pickle, sys
+import gzip
+import pickle
+import sys
 from pathlib import Path
 
 _SERVICES = Path(__file__).resolve().parent.parent / "services"
