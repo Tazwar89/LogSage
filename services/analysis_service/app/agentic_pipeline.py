@@ -1,21 +1,22 @@
 """
 Agentic diagnostic pipeline using LangGraph.
 
-Replaces the single-shot LLM call in the original llm_analysis.py with a
 3-node graph, each node with a distinct responsibility:
 
-  1. triage_node   -- confirms this is a genuine anomaly worth investigating
-                       and extracts key entities from the raw log line.
+  1. triage_node   -- redacts sensitive data and extracts key entities from the
+                       anomalous log entry (or anomalous block's event context).
   2. research_node -- retrieves relevant historical fixes via RAG
-                       (wraps the existing rag.retrieve_context()).
+                       (wraps rag.retrieve_context(), which now drops matches
+                       beyond a distance cutoff instead of always returning k).
   3. report_node   -- synthesizes triage + research into a final
-                       root_cause / suggested_fix / confidence verdict.
+                       root_cause / suggested_fix / confidence verdict, then
+                       post-validates the suggested fix (no paths that were not
+                       in the input, no destructive commands).
 
 State is passed between nodes via a typed dict, matching LangGraph's
-standard state-graph pattern. This is a real loop (state accumulates
-across nodes) rather than a single prompt relabeled as an "agent".
+standard state-graph pattern.
 """
-import os, json
+import os, json, re
 from functools import partial
 from typing import TypedDict, List, Dict, Any
 from langgraph.graph import StateGraph, END
@@ -25,6 +26,15 @@ from logsage_common.redact import redact
 
 LLM_MODEL = os.getenv("LLM_MODEL", "openai/gpt-oss-20b")
 MOCK_LLM = os.getenv("MOCK_LLM", "false").lower() == "true"
+
+# Absolute filesystem / HDFS paths, e.g. /user/root/rand/part-00345
+_PATH_RE = re.compile(r"(?<![\w:/.\-])/[\w.\-<>*$]+(?:/[\w.\-<>*$]+)*")
+# Commands that delete or reformat data; a log diagnosis should never propose them.
+_DESTRUCTIVE_RE = re.compile(
+    r"(hdfs\s+dfs\s+-rm[^\n;|`]*|hadoop\s+fs\s+-rm[^\n;|`]*|\brm\s+-[^\n;|`]*|"
+    r"hdfs\s+fsck[^\n;|`]*-delete[^\n;|`]*|namenode\s+-format[^\n;|`]*)",
+    re.IGNORECASE,
+)
 
 
 class DiagnosticState(TypedDict):
@@ -62,14 +72,46 @@ def _call_llm_json(prompt: str, mock_response: dict) -> dict:
     return json.loads(response.choices[0].message.content or "{}")
 
 
+def sanitize_suggested_fix(fix: str, allowed_text: str) -> tuple[str, list[str]]:
+    """
+    Deterministic guard on the LLM's suggested_fix. Returns (clean_fix, flags).
+      - any absolute path not present verbatim in allowed_text -> replaced by <path>
+      - destructive commands (rm/delete/format) -> replaced by a placeholder
+    """
+    flags: list[str] = []
+
+    if not isinstance(fix, str):
+        return fix, flags
+
+    def _replace_destructive(_m):
+        if "destructive_command_removed" not in flags:
+            flags.append("destructive_command_removed")
+
+        return "[destructive command removed]"
+
+    fix = _DESTRUCTIVE_RE.sub(_replace_destructive, fix)
+
+    def _replace_path(m):
+        path = m.group(0).rstrip(".,;:)")
+        if path in allowed_text:
+            return m.group(0)
+
+        if "unsupported_path_removed" not in flags:
+            flags.append("unsupported_path_removed")
+
+        return "<path>" + m.group(0)[len(path):]
+
+    return _PATH_RE.sub(_replace_path, fix), flags
+
+
 def triage_node(state: DiagnosticState) -> DiagnosticState:
-    """Node 1: redact sensitive data, extract key entities from the log line."""
+    """Node 1: redact sensitive data, extract key entities from the log entry."""
     redacted = redact(state["raw_log"])
 
-    prompt = f"""Extract key entities from this system log line. Respond ONLY in JSON
+    prompt = f"""Extract key entities from this system log entry. Respond ONLY in JSON
 with keys: component, error_keywords (list), severity_guess (low/medium/high).
 
-Log line: {redacted}"""
+Log entry: {redacted}"""
 
     entities = _call_llm_json(
         prompt,
@@ -84,7 +126,7 @@ Log line: {redacted}"""
 
 
 def research_node(state: DiagnosticState, kb_store, kb_lookup) -> DiagnosticState:
-    """Node 2: retrieve related historical issues/fixes via RAG."""
+    """Node 2: retrieve related historical issues/fixes via RAG (distance-filtered)."""
     from .rag import retrieve_context
 
     context = retrieve_context(state["redacted_log"], kb_store, kb_lookup, k=3)
@@ -94,16 +136,25 @@ def research_node(state: DiagnosticState, kb_store, kb_lookup) -> DiagnosticStat
 
 def report_node(state: DiagnosticState) -> DiagnosticState:
     """Node 3: synthesize triage + research into a final diagnosis."""
-    context_str = "\n".join(
-        f"- Issue: {c['issue']} | Fix: {c['fix']}" for c in state["retrieved_context"]
-    ) or "No related historical issues found."
+    context = state["retrieved_context"]
+    context_str = "\n".join(f"- Issue: {c['issue']} | Fix: {c['fix']}" for c in context) \
+        or "None. No knowledge-base entry matched closely enough; do not invent one."
 
     prompt = f"""You are a log diagnostic assistant.
 
-Anomalous log entry: {state['redacted_log']}
+Anomalous log entry (this is the ONLY evidence you may cite):
+{state['redacted_log']}
+
 Extracted entities: {json.dumps(state['entities'])}
-Related historical issues/fixes:
+
+Related historical issues/fixes from the knowledge base:
 {context_str}
+
+Rules:
+- Base root_cause on the log entry above. Use a knowledge-base item only if it clearly matches this entry; otherwise ignore it.
+- suggested_fix must be generic investigative or remedial guidance. Do NOT include any file path, hostname, IP address, or block ID unless it appears verbatim in the log entry above.
+- NEVER suggest commands that delete, overwrite, or format data (rm, -delete, format).
+- If the evidence is insufficient, say so in root_cause and set confidence below 0.5.
 
 Respond ONLY in JSON with keys: root_cause, suggested_fix, confidence (0-1)."""
 
@@ -115,6 +166,14 @@ Respond ONLY in JSON with keys: root_cause, suggested_fix, confidence (0-1)."""
             "confidence": 0.5,
         },
     )
+
+    allowed = state["redacted_log"] + "\n" + context_str
+    clean_fix, flags = sanitize_suggested_fix(analysis.get("suggested_fix", ""), allowed)
+    analysis["suggested_fix"] = clean_fix
+    analysis["kb_matches_used"] = len(context)
+
+    if flags:
+        analysis["guardrail_flags"] = flags
 
     return {**state, "final_analysis": analysis}
 
@@ -141,7 +200,7 @@ def build_diagnostic_graph(kb_store, kb_lookup):
 
 
 def run_diagnostic_pipeline(raw_log: str, kb_store, kb_lookup) -> dict:
-    """Public entry point: runs the full agentic pipeline on a single log line."""
+    """Public entry point: runs the full agentic pipeline on one log entry or block context."""
     pipeline = build_diagnostic_graph(kb_store, kb_lookup)
     initial_state: DiagnosticState = {
         "raw_log": raw_log,
