@@ -1,6 +1,6 @@
 # LogSage
 
-An LLM-powered log analysis system that ingests unstructured system logs, mines recurring event templates, detects anomalous log lines via embedding distance, and generates root-cause diagnoses and suggested fixes using a multi-step agentic RAG pipeline.
+An LLM-powered log analysis system that ingests unstructured system logs, mines recurring event templates, detects anomalies with two complementary detectors (a per-line embedding-distance detector and a DeepLog-style LSTM that scores per-block event sequences), and generates root-cause diagnoses and suggested fixes using a multi-step agentic RAG pipeline.
 
 Built as three independently deployable microservices, coordinated via Kafka and a shared Redis store, and tested against the [Loghub HDFS](https://github.com/logpai/loghub) dataset.
 
@@ -40,7 +40,7 @@ Manually reading through thousands of system log lines to find the handful that 
    │  GET /analyze/{trace_id}  GET /logs  GET /stats                  │
    │                                                                  │
    │  1. queries the baseline collection in Qdrant                    │
-   │  2. anomaly detection (Qdrant L2 distance threshold)              │
+   │  2. anomaly detection (Qdrant L2 distance threshold)             │
    │  3. if anomalous → LangGraph agentic pipeline:                   │
    │       triage node → research node (RAG) → report node            │
    │  4. Pandas/scikit-learn analytics via /stats                     │
@@ -65,6 +65,28 @@ Anomaly detection only works if new events are scored against a **fixed, stable 
 
 - **`POST /upload/baseline`** (ingestion_service) — parses a log file, mines templates via Drain3, and *recreates* the Qdrant `baseline` collection from scratch.
 - **`POST /upload/logs`** (ingestion_service) — parses a log file and publishes each line to Kafka for asynchronous storage, **without** touching the baseline collection.
+
+### Key design decision: two detectors, because per-line scoring cannot see sequence anomalies
+
+Loghub's HDFS labels are per block, and a block is anomalous because of its event sequence (a missing confirmation, a retry, truncation), not because any single line looks unusual. The per-line embedding detector scored 0% precision and 0% recall on a held-out HDFS_2k split (68 anomalous, 577 normal blocks), so it is kept as a cheap first filter but is not the primary detector for HDFS.
+
+The sequence detector (logsage_common.sequence_anomaly.DeepLogDetector) is a PyTorch LSTM trained on normal blocks only that predicts the next Drain3 template ID; a block's score is its worst next-event surprisal. The threshold is calibrated on held-out normal blocks (target FPR 0.5%), so no anomaly labels are used for tuning.
+
+Held-out results on Loghub HDFS_v1 (575,061 blocks, 45 templates; split 446,578 train / 55,822 val / 55,823 normal test + all 16,838 anomalous blocks as test; seed 42):
+
+| Metric | Value |
+| Recall | 97.1% (16,346 / 16,838) |
+| False-positive rate | 0.45% (253 / 55,823) |
+| Precision on this test set | 98.5% (test set is 23% anomalous) |
+| Estimated precision at HDFS's natural ~2.9% anomaly rate| ~87% (computed from recall and FPR, not measured) |
+
+Trained with scripts/train_sequence_model.py; artifacts live in models/sequence/ and are baked into the ingestion image. meta.json records 100% Drain3 template-ID agreement between the training and serving parsers on 200k lines.
+
+#### Evaluation
+
+- `eval/run_sequence_eval.py` — samples real labeled HDFS_v1 blocks, runs them through the sequence detector and the agentic pipeline, and has a different judge model grade each diagnosis against the block's own log lines (reference-free, because Loghub has no root-cause labels). Also reports ungrounded-path and destructive-command rates. Results: `eval/sequence_judge_results.json`.
+
+- `eval/run_eval.py` — legacy per-line harness over a 13-case hand-written golden set (mostly synthetic or near-duplicate lines, self-judged). Kept as a wiring check; its committed result (4/13) reflects the per-line detector missing most cases, not a claim about diagnosis quality.
 
 ### Key design decision: Qdrant as a shared server, not a shared volume
 
@@ -98,7 +120,9 @@ State accumulates across nodes via a typed dict, matching LangGraph's standard p
 |---|---|---|
 | `POST` | `/upload/baseline` | Builds/rebuilds the baseline reference index from a clean log file |
 | `POST` | `/upload/logs` | Publishes a log file's lines to Kafka for asynchronous storage |
+| `POST` | `/upload/logs/sequence` | Groups lines by HDFS BlockId, scores each block's event sequence with the DeepLog-style LSTM, and publishes one entry per anomalous block. Upload complete block sessions; a block split across uploads looks truncated. Response includes anomalous_blocks, anomalous_block_ids (capped, see anomalous_block_ids_truncated) |
 | `GET` | `/health` | Health check |
+| `GET` | `/sequence/status` | Whether the trained model in models/sequence/ is loaded, plus its training metadata |
 
 **analysis_service** (`:8002`)
 
@@ -218,11 +242,13 @@ Two things worth knowing before trying this on a local cluster:
 ## Known limitations
 
 - `ingestion_service` is pinned to a single replica; scaling it would require coordinating concurrent baseline rebuilds against the same Qdrant collection, which isn't implemented.
-- The knowledge base (`data/knowledge_base.json`) is a small, hand-written seed set for demonstration, not a comprehensive fix database.
+- The knowledge base (`data/knowledge_base.json`) is a small, hand-written set covering common HDFS failure families, not a comprehensive fix database. Retrieval drops matches beyond `RAG_MAX_DISTANCE` (default 1.0, uncalibrated), so the report may run with no KB context.
+- The sequence model is trained on HDFS_v1 only; other log formats need retraining. Drain3 templates and the block-ID regex are HDFS-specific.
+- Splits are random by block, not temporal.
 - Anomaly threshold is `sqrt(0.6) ≈ 0.775`, tuned for Qdrant's true L2 distance against the HDFS_2k dataset, and would need re-tuning for other log formats or distance metrics.
 - There's a small delay between `/upload/logs` and a trace_id becoming queryable via `/analyze`, since ingestion happens asynchronously through Kafka rather than synchronously in the request/response cycle.
 
 ## Possible extensions
 
-- LLM-as-judge evaluation harness to score diagnosis quality against a labeled set.
+- Add human-verified root-cause references for a subset of anomalous blocks to validate the LLM judge.
 - Production observability (latency/token-usage tracing via LangSmith or similar) for the agentic pipeline.
