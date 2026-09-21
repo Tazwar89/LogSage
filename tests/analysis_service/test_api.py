@@ -7,10 +7,10 @@ in sys.modules before main.py is imported, so these run instantly and offline.
 import importlib
 import sys
 import types
+from typing import ClassVar
 
 import pytest
 from fastapi.testclient import TestClient
-from typing import ClassVar
 
 
 class FakeLogStore:
