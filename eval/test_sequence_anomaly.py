@@ -158,7 +158,7 @@ def test_build_block_sequences_from_hdfs_format_log(tmp_path):
     log = tmp_path / "mini.log"
     log.write_text("\n".join(lines) + "\n")
 
-    seqs, templates = build_block_sequences(str(log), progress_every=0)
+    seqs, _templates = build_block_sequences(str(log), progress_every=0)
 
     assert set(seqs) == {"blk_111", "blk_222"}
     assert len(seqs["blk_111"]) == 3  # responder, addStored, delete-ask

@@ -75,7 +75,7 @@ async def upload_logs(file: UploadFile):
 
     baseline_vectors = fetch_baseline_vectors(baseline_store)
     detector = BaselineAnomalyDetector().fit(baseline_vectors)
-    anomalous_logs, scored_logs = filter_anomalous_logs(parsed_logs, baseline_store, detector)
+    anomalous_logs, _scored_logs = filter_anomalous_logs(parsed_logs, baseline_store, detector)
 
     entries_with_ids = [(f"{file.filename}-{i}", entry) for i, entry in enumerate(anomalous_logs)]
     published = publish_batch(producer, entries_with_ids)

@@ -104,13 +104,13 @@ def test_normal_blocks_pass_and_anomalous_blocks_flagged(scorer):
 
 
 def test_unseen_template_is_flagged_and_counted(scorer):
-    _, blocks, results = _score(scorer, ["unseen"] * 5)
+    _, _blocks, results = _score(scorer, ["unseen"] * 5)
 
     assert all(r.is_anomalous and r.unknown_templates >= 1 for r in results.values())
 
 
 def test_build_block_entry_keeps_parsed_fields_and_adds_context(scorer):
-    parsed, blocks, results = _score(scorer, ["missing"])
+    parsed, _blocks, results = _score(scorer, ["missing"])
     result = next(iter(results.values()))
     entry = build_block_entry(parsed, result)
 
