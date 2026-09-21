@@ -151,6 +151,14 @@ def main() -> None:
     args = p.parse_args()
 
     judge_model = os.getenv("JUDGE_MODEL", DEFAULT_JUDGE)
+
+    if not args.dry_run:
+        from openai import OpenAI
+        OpenAI(
+            api_key=os.environ.get("GROQ_API_KEY", os.environ.get("OPENAI_API_KEY", "")),
+            base_url=os.environ.get("LLM_BASE_URL", "https://api.groq.com/openai/v1"),
+        ).models.retrieve(judge_model)
+
     gen_model = os.getenv("LLM_MODEL", "openai/gpt-oss-20b")
 
     if judge_model == gen_model and not args.dry_run:
