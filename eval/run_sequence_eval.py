@@ -157,6 +157,7 @@ def judge(context: str, analysis: dict, model: str) -> dict:
                         messages=[{"role": "user", "content": prompt}],
                         extra_body={"reasoning_effort": "none"} # Explicitly pass the parameter
                     )
+
                 else:
                     resp = client.chat.completions.create(
                         model=model,
@@ -254,6 +255,8 @@ def main() -> None:
 
     cases, errors = [], []
 
+    from openai import OpenAIError
+
     for b in tp:
         try:
             entry = build_block_entry(parsed_logs, results[b])
@@ -261,7 +264,7 @@ def main() -> None:
             analysis = out["analysis"]
             verdict = judge(entry["message"], analysis, judge_model)
 
-        except Exception as exc:
+        except (OpenAIError, json.JSONDecodeError) as exc:
             errors.append({"block_id": b, "error": f"{type(exc).__name__}: {exc}"[:300]})
             print(f"{b}  ERROR {type(exc).__name__}")
 

@@ -108,6 +108,7 @@ def _get_baseline_store():
         return None
 
     from logsage_common.vector_store_qdrant import QdrantVectorStore
+    from qdrant_client.http.exceptions import ResponseHandlingException
 
     try:
         store = QdrantVectorStore(collection_name="baseline")
@@ -115,7 +116,7 @@ def _get_baseline_store():
 
         return store
 
-    except Exception as exc:
+    except (ResponseHandlingException, OSError) as exc:
         print(f"WARNING: could not load baseline Qdrant collection ({exc}); "
               f"negative cases will be skipped, not scored.")
 
