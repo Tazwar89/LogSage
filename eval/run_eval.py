@@ -38,13 +38,11 @@ the other.
 import os, sys, json
 from pathlib import Path
 
-# Make services/ and libs/logsage_common importable, same pattern as
-# tests/analysis_service/conftest.py.
-#_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "services"))
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "libs" / "logsage_common"))
-#sys.path.insert(0, str(_ROOT / "services"))
-#sys.path.insert(0, str(_ROOT / "libs" / "logsage_common"))
+_ROOT = Path(__file__).resolve().parent.parent
+#sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "services"))
+#sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "libs" / "logsage_common"))
+sys.path.insert(0, str(_ROOT / "services"))
+sys.path.insert(0, str(_ROOT / "libs" / "logsage_common"))
 
 from analysis_service.app.agentic_pipeline import run_diagnostic_pipeline
 from analysis_service.app.rag import load_knowledge_base, build_kb_index

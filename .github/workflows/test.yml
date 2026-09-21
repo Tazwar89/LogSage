@@ -46,6 +46,9 @@ jobs:
       - name: Run consumer_service tests
         run: pytest tests/consumer_service -v
 
+      - name: Run eval tests
+        run: pytest eval -v
+
       - name: Lint (non-blocking)
         run: |
           pip install ruff

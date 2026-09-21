@@ -116,6 +116,12 @@ jobs:
           curl -f http://localhost:8002/analyze/test_anomalous.log-0
           curl -f http://localhost:8002/stats
 
+      - name: Sequence endpoint smoke test
+        run: |
+          curl -sf http://localhost:8001/sequence/status | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['available'], d"
+          curl -sf -X POST http://localhost:8001/upload/logs/sequence -F "file=@HDFS_2k.holdout.log" \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print(d); assert d['blocks_scored'] > 0 and 'anomalous_block_ids_truncated' in d"
+
       - name: Run analysis load-test script
         run: |
           chmod +x scripts/load_test_analysis.sh

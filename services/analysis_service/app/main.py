@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, FastAPI, Header, HTTPException, Query
 from pydantic import BaseModel, ConfigDict
 
 from .anomaly import is_anomalous
-from .rag import load_knowledge_base, build_kb_index, retrieve_context
+from .rag import load_knowledge_base, build_kb_index
 from .agentic_pipeline import run_diagnostic_pipeline
 from .analytics import compute_log_stats
 

@@ -16,6 +16,7 @@ Responsibilities:
   built entirely from individually normal lines).
 - GET /sequence/status: whether a trained sequence model is loaded/available.
 """
+import os
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
 
@@ -102,11 +103,16 @@ async def upload_logs_sequence(file: UploadFile):
     entries_with_ids = [(f"{file.filename}-{r.block_id}", build_block_entry(parsed_logs, r)) for r in anomalous]
     published = publish_batch(producer, entries_with_ids)
 
+    ids = [r.block_id for r in anomalous]
+    cap = int(os.getenv("MAX_RETURNED_BLOCK_IDS", "500"))
+
     return {
         "total_parsed": len(parsed_logs),
         "blocks_scored": len(results),
         "anomalous_blocks": len(anomalous),
         "published_to_kafka": published,
         "suppressed_as_normal": len(results) - len(anomalous),
-        "anomalous_block_ids": [r.block_id for r in anomalous][:100],
+        "anomalous_block_ids": ids[:cap],
+        "anomalous_block_ids_returned": min(len(ids), cap),
+        "anomalous_block_ids_truncated": len(ids) > cap,
     }
