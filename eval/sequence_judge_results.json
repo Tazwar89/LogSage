@@ -1,0 +1,101 @@
+{
+  "seed": 42,
+  "judge_model": "qwen/qwen3.8-27b",
+  "generator_model": "openai/gpt-oss-20b",
+  "blocks_sampled": 10,
+  "blocks_not_found_in_log": 0,
+  "detector_on_sample": {
+    "tp": 5,
+    "fn": 0,
+    "fp": 0,
+    "normal_scored": 5
+  },
+  "diagnosed_cases": 5,
+  "judge_pass_rate": 0.4,
+  "judge_pass_rate_95ci": [
+    0.1176,
+    0.7693
+  ],
+  "mean_judge_score": 0.7,
+  "end_to_end_rate_incl_missed": 0.4,
+  "ungrounded_path_rate": 0.0,
+  "destructive_command_rate": 0.0,
+  "cases_with_kb_match": 5,
+  "cases": [
+    {
+      "block_id": "blk_-5941325171784605323",
+      "n_events": 2,
+      "sequence_score": 9.8808,
+      "kb_matches_used": 3,
+      "root_cause": "Block allocation and transfer to DataNode completed successfully; no error detected.",
+      "suggested_fix": "Confirm DataNode is healthy and block is replicated; monitor for any subsequent failures.",
+      "judge_score": 0.5,
+      "judge_rationale": "The diagnosis correctly identifies that no error is present in the log lines, but it fails to name the specific abnormal event (the session flag itself or the lack of completion/acknowledgment) and instead provides a generic, non-specific remediation that does not address the anomaly context.",
+      "checks": {
+        "ungrounded_paths": [],
+        "destructive_command": false,
+        "guardrail_flags": []
+      }
+    },
+    {
+      "block_id": "blk_-212879379851735628",
+      "n_events": 43,
+      "sequence_score": 16.0821,
+      "kb_matches_used": 3,
+      "root_cause": "DataXceiver exception while serving block blk_-212879379851735628 caused the block to be marked invalid and deleted; indicates a pipeline/network disruption during block transfer",
+      "suggested_fix": "Check network connectivity and DataNode health for the nodes involved in the transfer, verify that the block was replicated elsewhere, and monitor for repeated Pipeline termination or Broken pipe errors; ensure proper timeout and retry settings",
+      "judge_score": 1.0,
+      "judge_rationale": "The diagnosis correctly identifies the specific WARN exception in the log as the root cause and suggests standard, non-destructive investigative steps for network and node health.",
+      "checks": {
+        "ungrounded_paths": [],
+        "destructive_command": false,
+        "guardrail_flags": []
+      }
+    },
+    {
+      "block_id": "blk_3294040193752213839",
+      "n_events": 4,
+      "sequence_score": 12.2627,
+      "kb_matches_used": 3,
+      "root_cause": "The client or upstream DataNode stopped sending data mid-block, causing DataXceiver to throw java.io.IOException: Could not read from stream for blk_3294040193752213839.",
+      "suggested_fix": "Check the writing task and upstream DataNode logs for abrupt termination or timeout, verify network stability between nodes, and confirm the block has been re-replicated or re-received.",
+      "judge_score": 1.0,
+      "judge_rationale": "The diagnosis correctly identifies the specific exception 'java.io.IOException: Could not read from stream' for the block ID present in the logs as the root cause and suggests plausible, non-destructive investigative steps.",
+      "checks": {
+        "ungrounded_paths": [],
+        "destructive_command": false,
+        "guardrail_flags": []
+      }
+    },
+    {
+      "block_id": "blk_2403374163454772485",
+      "n_events": 27,
+      "sequence_score": 4.3296,
+      "kb_matches_used": 3,
+      "root_cause": "The block blk_2403374163454772485 was marked invalid and subsequently deleted after being received, indicating a corrupted or incomplete transfer likely caused by a network interruption or node failure during the pipeline.",
+      "suggested_fix": "Verify network connectivity between the involved DataNodes and check for disk I/O errors on the node that stored the block. Examine surrounding log entries for timeouts or I/O exceptions. If the block is missing from other replicas, initiate a manual re-replication from remaining healthy replicas.",
+      "judge_score": 0.5,
+      "judge_rationale": "The diagnosis correctly identifies the block invalidation and deletion events present in the log, but it invents specific root causes (network interruption, node failure, corruption) that are not evidenced by the provided lines, which only show the administrative marking of the block as invalid without any preceding error or exception.",
+      "checks": {
+        "ungrounded_paths": [],
+        "destructive_command": false,
+        "guardrail_flags": []
+      }
+    },
+    {
+      "block_id": "blk_4568849013802524106",
+      "n_events": 2,
+      "sequence_score": 8.9792,
+      "kb_matches_used": 3,
+      "root_cause": "The log entry indicates a normal block receipt by the DataNode and its allocation by the NameNode. No error or exception is reported in the provided evidence.",
+      "suggested_fix": "Confirm that the DataNode is reachable and that network conditions are stable. Monitor subsequent logs for any unexpected EOF or network errors that could indicate a truncated transfer.",
+      "judge_score": 0.5,
+      "judge_rationale": "The diagnosis correctly identifies that the log lines show normal operations without errors, but it fails to explicitly state that the session is not anomalous based on the provided evidence, instead offering generic monitoring advice that implies a potential issue exists.",
+      "checks": {
+        "ungrounded_paths": [],
+        "destructive_command": false,
+        "guardrail_flags": []
+      }
+    }
+  ]
+}

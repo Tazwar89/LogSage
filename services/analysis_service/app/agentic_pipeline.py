@@ -16,16 +16,17 @@ Agentic diagnostic pipeline using LangGraph.
 State is passed between nodes via a typed dict, matching LangGraph's
 standard state-graph pattern.
 """
-import os, json, re
+import os, json, re, time
 from functools import partial
 from typing import TypedDict, List, Dict, Any
 from langgraph.graph import StateGraph, END
-from openai import OpenAI
+from openai import OpenAI, RateLimitError
 
 from logsage_common.redact import redact
 
 LLM_MODEL = os.getenv("LLM_MODEL", "openai/gpt-oss-20b")
 MOCK_LLM = os.getenv("MOCK_LLM", "false").lower() == "true"
+LLM_MAX_RETRIES = int(os.getenv("LLM_MAX_RETRIES", "5"))
 
 # Absolute filesystem / HDFS paths, e.g. /user/root/rand/part-00345
 _PATH_RE = re.compile(r"(?<![\w:/.\-])/[\w.\-<>*$]+(?:/[\w.\-<>*$]+)*")
@@ -63,13 +64,26 @@ def _call_llm_json(prompt: str, mock_response: dict) -> dict:
         return mock_response
 
     client = _get_client()
-    response = client.chat.completions.create(
-        model=LLM_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        response_format={"type": "json_object"},
-    )
 
-    return json.loads(response.choices[0].message.content or "{}")
+    for attempt in range(LLM_MAX_RETRIES):
+        try:
+            response = client.chat.completions.create(
+                model=LLM_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"},
+            )
+
+            return json.loads(response.choices[0].message.content or "{}")
+
+        except RateLimitError as exc:
+            if attempt == LLM_MAX_RETRIES - 1:
+                raise
+
+            # Groq reports "Please try again in 1.5s"; otherwise back off exponentially.
+            m = re.search(r"try again in ([\d.]+)s", str(exc))
+            time.sleep(min(60.0, float(m.group(1)) + 1.0 if m else 5.0 * 2 ** attempt))
+
+    raise RuntimeError(f"Failed to get a valid JSON response from the LLM after {LLM_MAX_RETRIES} attempts.")
 
 
 def sanitize_suggested_fix(fix: str, allowed_text: str) -> tuple[str, list[str]]:
@@ -83,6 +97,7 @@ def sanitize_suggested_fix(fix: str, allowed_text: str) -> tuple[str, list[str]]
     if not isinstance(fix, str):
         return fix, flags
 
+
     def _replace_destructive(_m):
         if "destructive_command_removed" not in flags:
             flags.append("destructive_command_removed")
@@ -91,8 +106,10 @@ def sanitize_suggested_fix(fix: str, allowed_text: str) -> tuple[str, list[str]]
 
     fix = _DESTRUCTIVE_RE.sub(_replace_destructive, fix)
 
+
     def _replace_path(m):
         path = m.group(0).rstrip(".,;:)")
+
         if path in allowed_text:
             return m.group(0)
 
@@ -150,7 +167,10 @@ Extracted entities: {json.dumps(state['entities'])}
 Related historical issues/fixes from the knowledge base:
 {context_str}
 
+This entry was flagged as anomalous by an upstream detector. Anomalies can be structural (a missing, repeated or out-of-order event, or a truncated event sequence) with no explicit error line. Never conclude that nothing is wrong; if there is no error line, say which expected event is missing or out of place, using only the lines above.
+
 Rules:
+- Separate what the log shows from what you infer: state observed events as facts and causes as hypotheses ("possibly", "consistent with"). Do not assert a cause the lines do not show.
 - Base root_cause on the log entry above. Use a knowledge-base item only if it clearly matches this entry; otherwise ignore it.
 - suggested_fix must be generic investigative or remedial guidance. Do NOT include any file path, hostname, IP address, or block ID unless it appears verbatim in the log entry above.
 - NEVER suggest commands that delete, overwrite, or format data (rm, -delete, format).

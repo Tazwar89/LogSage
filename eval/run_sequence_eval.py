@@ -242,13 +242,21 @@ def main() -> None:
     kb_store = QdrantVectorStore(collection_name="eval_knowledge_base")
     kb_lookup = build_kb_index(kb_store, kb_entries)
 
-    cases = []
+    cases, errors = [], []
 
     for b in tp:
-        entry = build_block_entry(parsed_logs, results[b])
-        out = run_diagnostic_pipeline(entry["message"], kb_store, kb_lookup)
-        analysis = out["analysis"]
-        verdict = judge(entry["message"], analysis, judge_model)
+        try:
+            entry = build_block_entry(parsed_logs, results[b])
+            out = run_diagnostic_pipeline(entry["message"], kb_store, kb_lookup)
+            analysis = out["analysis"]
+            verdict = judge(entry["message"], analysis, judge_model)
+
+        except Exception as exc:
+            errors.append({"block_id": b, "error": f"{type(exc).__name__}: {exc}"[:300]})
+            print(f"{b}  ERROR {type(exc).__name__}")
+
+            continue
+
         cases.append({
             "block_id": b, "n_events": entry["n_events"], "sequence_score": entry["sequence_anomaly_score"],
             "kb_matches_used": analysis.get("kb_matches_used", len(out["retrieved_context"])),
@@ -271,6 +279,7 @@ def main() -> None:
         "destructive_command_rate": round(sum(1 for c in cases if c["checks"]["destructive_command"]) / n, 4) if n else None,
         "cases_with_kb_match": sum(1 for c in cases if c["kb_matches_used"] > 0),
         "cases": cases,
+        "errored_cases": errors,
     })
     RESULTS_PATH.write_text(json.dumps(summary, indent=2))
     print(json.dumps({k: v for k, v in summary.items() if k != "cases"}, indent=2))
