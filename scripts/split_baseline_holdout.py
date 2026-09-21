@@ -14,10 +14,11 @@ def split(log_path, labels_path, holdout_frac=0.3, seed=42):
 
     blocks = defaultdict(list)
 
-    for line in open(log_path):
-        m = BLOCK_RE.search(line)
-        key = m.group() if m else "_no_block"
-        blocks[key].append(line)
+    with open(log_path) as f:
+        for line in f:
+            m = BLOCK_RE.search(line)
+            key = m.group() if m else "_no_block"
+            blocks[key].append(line)
 
     anomaly_present = [k for k in blocks if k in anomaly_ids]
     normal_present = [k for k in blocks if k not in anomaly_ids]

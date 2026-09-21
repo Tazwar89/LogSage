@@ -10,10 +10,11 @@ import types
 
 import pytest
 from fastapi.testclient import TestClient
+from typing import ClassVar
 
 
 class FakeLogStore:
-    entries = {}
+    entries: ClassVar[dict] = {}
 
     def get(self, tid):
         return self.entries.get(tid)
