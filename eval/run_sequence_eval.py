@@ -153,7 +153,7 @@ def judge(context: str, analysis: dict, model: str) -> dict:
                     resp = client.chat.completions.create(
                         model=model,
                         temperature=0,
-                        max_tokens=300,
+                        max_tokens=1200,
                         response_format={"type": "json_object"},
                         messages=[{"role": "user", "content": prompt}],
                         extra_body={"reasoning_effort": "none"} # Explicitly pass the parameter
@@ -163,7 +163,7 @@ def judge(context: str, analysis: dict, model: str) -> dict:
                     resp = client.chat.completions.create(
                         model=model,
                         temperature=0,
-                        max_tokens=300,
+                        max_tokens=1200,
                         response_format={"type": "json_object"},
                         messages=[{"role": "user", "content": prompt}]
                     )
@@ -173,7 +173,7 @@ def judge(context: str, analysis: dict, model: str) -> dict:
                 resp = client.chat.completions.create(
                     model=model,
                     temperature=0,
-                    max_tokens=300,
+                    max_tokens=1200,
                     response_format={"type": "json_object"},
                     messages=[{"role": "user", "content": prompt}]
                 )
@@ -287,6 +287,8 @@ def main() -> None:
     n_anom = len(tp) + len(fn)
     summary.update({
         "diagnosed_cases": n,
+        "errored_cases_count": len(errors),
+        "error_rate_of_tp": round(len(errors) / len(tp), 4) if tp else None,
         "judge_pass_rate": round(passed / n, 4) if n else None,
         "judge_pass_rate_95ci": wilson(passed, n),
         "mean_judge_score": round(sum(c["judge_score"] for c in cases) / n, 4) if n else None,
