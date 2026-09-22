@@ -19,6 +19,11 @@ from analysis_service.app.agentic_pipeline import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _force_real_llm(monkeypatch):
+    monkeypatch.setattr("analysis_service.app.agentic_pipeline.MOCK_LLM", False)
+
+
 def make_fake_llm_response(payload: dict):
     """Builds a MagicMock shaped like an OpenAI ChatCompletion response."""
     response = MagicMock()
