@@ -51,7 +51,7 @@ from logsage_common.sequence_parsing import BLOCK_ID_RE
 from eval.precision_recall import load_ground_truth
 
 RESULTS_PATH = Path(__file__).parent / "sequence_judge_results.json"
-DEFAULT_JUDGE = "llama-3.3-70b-versatile"
+DEFAULT_JUDGE = "openai/gpt-oss-120b"
 PASS_THRESHOLD = 0.7
 
 JUDGE_PROMPT = """You are auditing an automated HDFS log diagnostic system.
