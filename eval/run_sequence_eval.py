@@ -135,6 +135,7 @@ def judge(context: str, analysis: dict, model: str) -> dict:
     client = OpenAI(
         api_key=os.environ.get("GROQ_API_KEY", os.environ.get("OPENAI_API_KEY", "")),
         base_url=os.environ.get("LLM_BASE_URL", "https://api.groq.com/openai/v1"),
+        max_retries=0,
     )
     prompt = JUDGE_PROMPT.format(
         context=context, 
@@ -256,9 +257,11 @@ def main() -> None:
     cases, errors = [], []
 
     from openai import OpenAIError
+    import time as _time
 
     for b in tp:
         try:
+            _time.sleep(2)  # stay under Groq free-tier RPM across triage+report+judge calls
             entry = build_block_entry(parsed_logs, results[b])
             out = run_diagnostic_pipeline(entry["message"], kb_store, kb_lookup)
             analysis = out["analysis"]

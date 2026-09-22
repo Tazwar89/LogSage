@@ -53,6 +53,7 @@ def _get_client():
     return OpenAI(
         api_key=os.environ.get("GROQ_API_KEY", os.environ.get("OPENAI_API_KEY", "")),
         base_url=os.environ.get("LLM_BASE_URL", "https://api.groq.com/openai/v1"),
+        max_retries=0,
     )
 
 
