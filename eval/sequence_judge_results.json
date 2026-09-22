@@ -1,126 +1,36 @@
 {
   "seed": 7,
-  "judge_model": "qwen/qwen3.8-27b",
+  "judge_model": "openai/gpt-oss-120b",
   "generator_model": "openai/gpt-oss-20b",
-  "blocks_sampled": 70,
+  "blocks_sampled": 60,
   "blocks_not_found_in_log": 0,
   "detector_on_sample": {
-    "tp": 58,
+    "tp": 28,
     "fn": 2,
     "fp": 0,
-    "normal_scored": 10
+    "normal_scored": 30
   },
-  "diagnosed_cases": 58,
-  "judge_pass_rate": 0.2759,
+  "diagnosed_cases": 20,
+  "judge_pass_rate": 1.0,
   "judge_pass_rate_95ci": [
-    0.1775,
-    0.402
+    0.8389,
+    1.0
   ],
-  "mean_judge_score": 0.6207,
-  "end_to_end_rate_incl_missed": 0.2667,
+  "mean_judge_score": 1.0,
+  "end_to_end_rate_incl_missed": 0.6667,
   "ungrounded_path_rate": 0.0,
   "destructive_command_rate": 0.0,
-  "cases_with_kb_match": 58,
+  "cases_with_kb_match": 20,
   "cases": [
-    {
-      "block_id": "blk_3447884879668134874",
-      "n_events": 4,
-      "sequence_score": 13.5276,
-      "kb_matches_used": 3,
-      "root_cause": "The DataNode stopped reading data from the stream while attempting to write block blk_3447884879668134874; this is consistent with a truncated transfer, likely due to the client or upstream DataNode aborting or timing out during the write.",
-      "suggested_fix": "Investigate the upstream node or client task that was sending this block: verify that it completed the write operation, check for any task aborts or timeouts, examine network stability between the source and the DataNode, and ensure the block is replicated to other DataNodes so the data remains available.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the specific IOException 'Could not read from stream' as the root cause and suggests plausible, non-destructive investigative steps regarding the upstream source and network stability.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-6227130362575626903",
-      "n_events": 4,
-      "sequence_score": 12.2627,
-      "kb_matches_used": 3,
-      "root_cause": "Mid-block transfer failed because the DataNode could not read the incoming stream, likely due to the source client or upstream DataNode terminating the connection before completing the block",
-      "suggested_fix": "Investigate the logs of the source node for this block ID to determine if the writing task was aborted or timed out, verify that the network path between source and destination is stable, and confirm that the block has been replicated to other nodes",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the specific exception 'Could not read from stream' present in the log as the root cause and suggests plausible, non-destructive investigative steps.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-3174232733041654340",
-      "n_events": 35,
-      "sequence_score": 9.2065,
-      "kb_matches_used": 3,
-      "root_cause": "Duplicate or stale delete command for block blk_-3174232733041654340, likely due to inconsistency between the NameNode block map and the DataNode's block report after replication changes or a DataNode restart, causing the DataNode to attempt to delete a replica it no longer tracks.",
-      "suggested_fix": "Verify the block reported by the DataNode is present in its volume map and that its block report matches the NameNode\u2019s block map. Check for recent replication adjustments or DataNode restarts that may have generated duplicate delete commands; ensure only one delete operation is issued and that the block is fully finalized before removal.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the 'BlockInfo not found in volumeMap' warnings as the anomaly but attributes the root cause to 'duplicate or stale delete commands' and 'inconsistency... after replication changes or a DataNode restart,' which are speculative mechanisms not explicitly evidenced in the log lines (which show a standard write/replicate/delete sequence), making the explanation vague and partly generic rather than strictly derived from the provided evidence.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_5567058207076986877",
-      "n_events": 4,
-      "sequence_score": 13.5276,
-      "kb_matches_used": 3,
-      "root_cause": "The DataNode received a block transfer request but the stream was interrupted before the block could be fully written, indicating the client or upstream DataNode stopped sending data mid\u2011block or a network interruption occurred.",
-      "suggested_fix": "Investigate the state of the task that produced this block (e.g., whether it was killed or timed out) and verify that the network path between source and destination DataNodes is stable and has sufficient resources for replication. Ensure that the block was re\u2011replicated to other replicas if necessary.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the 'java.io.IOException: Could not read from stream' exception as the root cause of the interrupted block transfer and suggests plausible, non-destructive investigative steps.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_9024772562379259601",
-      "n_events": 20,
-      "sequence_score": 7.5262,
-      "kb_matches_used": 3,
-      "root_cause": "The block was written by a task that later aborted or was killed, leaving the replica orphaned. The NameNode received duplicate addStoredBlock notifications for the same block, marked it as invalid (adding it to the invalidSet), and finally deleted the orphaned block files from all DataNodes. The redundant addStoredBlock warning and invalidSet entries indicate that the replica was not associated with any active file, consistent with a failed or abandoned write operation.",
-      "suggested_fix": "Investigate the task that produced the block to determine why it terminated prematurely or was killed, verify that its output files were correctly committed before finalization, and review the DataNode pipeline logs to see why the block was reported multiple times. If orphaned blocks appear frequently, consider configuring a block report cleanup routine or adjusting replication settings to reduce duplicate addStoredBlock notifications.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the redundant addStoredBlock and invalidSet events but invents a specific root cause (task abort/kill) that is not evidenced in the log lines, which only show the block lifecycle events without any error or termination signals.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
     {
       "block_id": "blk_804832521706127820",
       "n_events": 4,
       "sequence_score": 13.5276,
       "kb_matches_used": 3,
-      "root_cause": "writeBlock received IOException indicating the stream from the source was interrupted or incomplete, likely due to a network drop, client abort, or upstream task failure.",
-      "suggested_fix": "Check the upstream task or node that was sending the block for any aborts or timeouts, review its logs for corresponding errors, and verify that the block was successfully replicated or re\u2011replicated. Ensure that all involved DataNodes have adequate disk space and network connectivity.",
+      "root_cause": "The block transfer for blk_804832521706127820 was interrupted mid-stream, likely due to the client or upstream DataNode terminating or timing out before sending the full data, causing DataXceiver to throw java.io.IOException: Could not read from stream.",
+      "suggested_fix": "Inspect the logs of the upstream node and the client for any abrupt termination or timeout related to blk_804832521706127820. Verify network stability between the source and destination DataNodes, confirm sufficient disk space on the target, and if the block was not fully replicated, re-replicate the block or restart the write operation.",
       "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the specific exception 'java.io.IOException: Could not read from stream' present in the log as the root cause and suggests plausible, non-destructive investigative steps.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-3676508543204803643",
-      "n_events": 21,
-      "sequence_score": 9.9769,
-      "kb_matches_used": 3,
-      "root_cause": "The log sequence shows a block being allocated and replicated to multiple DataNodes, but it is later reported as not belonging to any file and is subsequently invalidated and deleted. This pattern matches a scenario where an orphaned block is produced\u2014most commonly when a client aborts or fails to commit a file, or when a pipeline is torn down prematurely. The anomaly is indicated by the missing normal finalization event (e.g., a FileCommit or a successful block commit) before the block is added and then immediately invalidated. The repeated addStoredBlock events and subsequent deletion suggest that the block was either never integrated into a file or was flagged as stale after a failed write.",
-      "suggested_fix": "Investigate the circumstances surrounding the original block allocation: review client-side logs for a premature abort or failure to commit the file, and check DataNode logs for any pipeline interruption or timeout that could have caused the write to terminate early. Verify that the block reports from DataNodes were not stale or duplicated. If the block is indeed orphaned, ensure it is removed from the cluster\u2019s namespace and confirm that any abandoned or failed write operations are properly cleaned up before resuming normal processing.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the 'not belong to any file' event and the subsequent deletion, but it speculates about client-side aborts and pipeline timeouts which are not evidenced in the provided log lines, and the suggested fix to 'ensure it is removed' is redundant since the logs already show the block being deleted.",
+      "judge_rationale": "The diagnosis correctly identifies the IOException in the logs as the abnormal event and offers appropriate, non\u2011destructive investigative steps.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -132,25 +42,10 @@
       "n_events": 33,
       "sequence_score": 8.3666,
       "kb_matches_used": 3,
-      "root_cause": "The block was allocated and received by the DataNode, but during the serving phase the DataXceiver reported repeated exceptions. This indicates the block transfer was interrupted or corrupted, leading the NameNode to mark the block as invalid and delete it because it no longer belonged to any file.",
-      "suggested_fix": "Check the network and client activity around the timestamps of the warnings to identify any aborts, timeouts, or I/O errors that could have caused the interrupted transfer. Verify that the pipeline was correctly established and that the block size reported matches the expected value. Inspect the DataNode and NameNode logs for related errors or node failures that may have contributed to the corruption.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the WARN exceptions and the subsequent invalidation/deletion of the block, but it incorrectly attributes the root cause to 'corruption' or 'interrupted transfer' of the block data itself, whereas the logs indicate a standard HDFS pipeline failure (likely due to the client aborting or a network issue during replication) where the NameNode simply cleaned up the orphaned block after the write pipeline failed, not because the data was inherently corrupted.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_5120950450685649928",
-      "n_events": 4,
-      "sequence_score": 13.5276,
-      "kb_matches_used": 3,
-      "root_cause": "writeBlock received IOException could not read from stream indicates the block transfer was truncated, likely because the client or upstream DataNode stopped sending data mid\u2011block or a network issue dropped the connection.",
-      "suggested_fix": "Inspect the upstream node logs for signs of a client abort or timeout, verify network stability between the nodes, and confirm that the block has been fully replicated to other DataNodes. If needed, trigger a re\u2011replication to ensure data consistency.",
+      "root_cause": "The logs indicate an orphaned block that was allocated and received by several DataNodes, subsequently reported by a DataNode to the NameNode as belonging to no file. This is consistent with a prematurely aborted or torn\u2011down write pipeline that left a replica in the cluster. The repeated \"Got exception while serving\" warnings and the block\u2019s addition to the invalid set confirm that the block was never properly linked to a file and was later removed.",
+      "suggested_fix": "Investigate the job that allocated the block for possible failures or premature termination. Verify network stability between DataNodes and the NameNode during block creation. Ensure that write pipelines are fully established before the block is reported as stored. Review recent cluster events for any node outages or I/O errors that could have caused the pipeline to tear down early. If orphaned blocks are a recurring issue, consider enabling stricter pipeline validation or automated cleanup of orphaned replicas.",
       "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the specific exception 'java.io.IOException: Could not read from stream' present in the log as the root cause and suggests plausible, non-destructive investigative steps.",
+      "judge_rationale": "The diagnosis accurately identifies the orphaned block indicated by allocation, serving exceptions, invalidSet entries, and the 'does not belong to any file' message, and proposes appropriate, non\u2011destructive investigative and remedial actions.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -162,70 +57,10 @@
       "n_events": 4,
       "sequence_score": 13.5276,
       "kb_matches_used": 3,
-      "root_cause": "The DataNode\u2019s attempt to receive and write a block failed with a java.io.IOException, indicating that the data stream was unexpectedly closed. This suggests the source DataNode or client aborted or timed out while transmitting the block.",
-      "suggested_fix": "Verify that the upstream node or client that was sending blk_-734505675470044801 was not killed or crashed. Inspect the upstream logs for a matching exception or timeout. Confirm that the network path between the source and destination is stable and that there is sufficient disk space on the receiving DataNode. Re\u2011replicate the block if necessary.",
+      "root_cause": "The DataNode's DataXceiver encountered a java.io.IOException stating \"Could not read from stream\" while writing block blk_-734505675470044801, indicating a mid-transfer interruption, likely due to a network drop, client abort, or upstream DataNode failure.",
+      "suggested_fix": "Investigate the client or upstream DataNode logs for a corresponding timeout or abort for the same block ID, verify network connectivity and stability between the involved nodes, and confirm that the block was re-replicated on another DataNode to avoid data loss.",
       "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the specific java.io.IOException 'Could not read from stream' present in the log as the root cause and suggests plausible, non-destructive investigative steps like checking upstream logs and network stability.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-3803698466091011225",
-      "n_events": 30,
-      "sequence_score": 8.462,
-      "kb_matches_used": 3,
-      "root_cause": "Orphaned block reported by DataNode that the NameNode has no file association for, likely caused by a prematurely terminated write pipeline or client crash. The block was marked invalid and subsequently deleted after multiple addStoredBlock attempts.",
-      "suggested_fix": "Investigate the preceding pipeline operations and client or DataNode health to determine why the write was interrupted. Verify that the block reached its intended replication targets and that any orphaned replicas are cleaned up. Confirm that the write pipeline is stable and that clients are properly closing streams.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the orphaned block and the 'does not belong to any file' error, but it invents a 'prematurely terminated write pipeline' and 'client crash' which are not evidenced in the log (the logs show successful block reception and subsequent deletion, with no explicit pipeline failure or client crash messages), and the suggested fix is generic rather than addressing the specific NameNode state inconsistency shown.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-5372031002389881662",
-      "n_events": 4,
-      "sequence_score": 13.5276,
-      "kb_matches_used": 3,
-      "root_cause": "The DataNode failed to receive the full block data; the client or upstream node stopped sending data before completion, likely due to a task termination or network interruption.",
-      "suggested_fix": "Verify the upstream node\u2019s logs for the same block ID, check for client aborts or timeouts, ensure network connectivity between the nodes, and confirm the DataNode has sufficient disk space for replication.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the 'java.io.IOException: Could not read from stream' exception as the root cause of the incomplete block reception and suggests plausible, non-destructive investigative steps.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-9198106308894346640",
-      "n_events": 2,
-      "sequence_score": 9.8808,
-      "kb_matches_used": 3,
-      "root_cause": "Incomplete block transfer indicated by missing completion event after block allocation and receipt. The expected acknowledgment from the DataNode to the NameNode (e.g., addStoredBlock) is absent, suggesting the transfer may have been truncated or aborted.",
-      "suggested_fix": "Verify network stability and client application behavior during block writes. Check for client aborts or DataNode crashes that could interrupt the transfer. Inspect DataNode logs for any subsequent errors or truncated messages, and confirm the block was eventually replicated or removed.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the absence of a completion event as the anomaly, but the suggested fix is generic and does not address the specific context of a MapReduce temporary file write, nor does it provide a concrete investigative step tied to the specific block ID or path provided.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_5554545601752082347",
-      "n_events": 2,
-      "sequence_score": 9.8808,
-      "kb_matches_used": 3,
-      "root_cause": "The block allocation event is followed only by the DataNode receiving the block; there is no subsequent confirmation or write acknowledgement, suggesting the transfer may have been truncated or incomplete. The missing event could indicate a network interruption, client abort, or DataNode failure before completing the block write.",
-      "suggested_fix": "Verify network connectivity between the client and the DataNode, review the DataNode logs for any subsequent errors or incomplete transfer messages, and check whether the block has been replicated to another DataNode. If the block is incomplete, trigger a re-replication or retry the write.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the absence of a completion event but relies on generic, non-specific troubleshooting steps rather than pinpointing a concrete abnormal event present in the log lines, and the provided log snippet is too short to definitively confirm a failure without additional context, making the root cause vague.",
+      "judge_rationale": "The diagnosis correctly identifies the IOException shown in the logs and proposes appropriate, non\u2011destructive investigative steps.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -237,55 +72,10 @@
       "n_events": 30,
       "sequence_score": 8.3666,
       "kb_matches_used": 3,
-      "root_cause": "Orphaned block caused by a pipeline failure and exceptions during writing; the DataNode reported a replica that the NameNode could not associate with any file, leading to invalidation and deletion.",
-      "suggested_fix": "Check the health of the DataNodes in the write pipeline and the network connectivity between them; review earlier client logs to confirm the write was aborted or failed; verify that the pipeline completed properly before the client or DataNode closed the connection.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the orphaned block and exceptions, but the suggested fix is generic and vague, failing to specify the concrete investigative steps (such as checking specific network links or client-side abort logs) required to resolve the pipeline failure evidenced in the logs.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-6216910833330798978",
-      "n_events": 26,
-      "sequence_score": 10.2691,
-      "kb_matches_used": 3,
-      "root_cause": "Exception while serving block during replication caused the block to be marked invalid and deleted",
-      "suggested_fix": "Examine DataNode and network logs for I/O errors or timeouts, verify replication target correctness and sufficient disk space, and confirm block integrity",
+      "root_cause": "Pipeline failure or aborted write caused an orphan block that was later marked invalid; the log lacks a normal block-completion event, indicating the write was interrupted before the file was committed.",
+      "suggested_fix": "Investigate the DataNode and client logs around the timestamps of the warning entries for I/O or network errors, confirm whether the client aborted the write or the DataNode pipeline was torn down prematurely, and verify that the file was not mistakenly deleted or abandoned before commit. Ensure replication and block report processes are functioning correctly.",
       "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the WARN-level exceptions during block serving as the root cause and suggests plausible, non-destructive investigative steps consistent with the log evidence.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-5605983133897142441",
-      "n_events": 32,
-      "sequence_score": 7.5326,
-      "kb_matches_used": 3,
-      "root_cause": "Exception during block transfer caused the block to be marked invalid and deleted",
-      "suggested_fix": "Check the DataNode logs for the exception details, verify network connectivity and disk space between the involved DataNodes, and ensure the replication pipeline is intact",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the WARN exceptions as the root cause, but the suggested fix is generic and does not address the specific evidence of the block being marked invalid and deleted from multiple DataNodes, which indicates a more severe consistency issue than just a transfer exception.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-5057408869195318440",
-      "n_events": 2,
-      "sequence_score": 9.8808,
-      "kb_matches_used": 3,
-      "root_cause": "The log shows a block allocation and a DataXceiver starting to receive the block, but it lacks a following event that would indicate the block transfer completed successfully (e.g., a write confirmation or block report). The anomalous detector may have flagged this as a structural anomaly due to the missing completion event or because the block transfer was truncated or interrupted without an explicit error message.",
-      "suggested_fix": "Investigate the block transfer status: verify that the block has been fully replicated on the target DataNode, check for any network interruptions or client aborts that might have caused a truncated transfer, and confirm that the block is not orphaned or pending removal. Review the NameNode and DataNode logs for subsequent events that confirm the block was written, and check for any replication failures that may have been suppressed.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the absence of a completion event as the anomaly, but the suggested fix is generic and does not address the specific structural gap in the log evidence provided.",
+      "judge_rationale": "The diagnosis correctly identifies the pipeline/aborted write indicated by the warnings and invalid\u2011set entries and suggests appropriate non\u2011destructive investigation.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -297,10 +87,10 @@
       "n_events": 42,
       "sequence_score": 13.8046,
       "kb_matches_used": 3,
-      "root_cause": "An interruption in the replication pipeline caused the DataNode to be unable to serve block blk_711398692579493650 to its peer, leading to the block being marked invalid and subsequently deleted from the local storage. This is consistent with a pipeline teardown due to I/O or network errors.",
-      "suggested_fix": "Verify the health and network connectivity of the DataNodes involved in the write pipeline. Inspect neighbouring pipeline nodes for signs of I/O errors, timeouts, or node failures, and confirm that the block was re\u2011replicated elsewhere. Ensure that the HDFS replication factor is satisfied and monitor for truncated transfers or broken pipes during replication.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the block invalidation and deletion but attributes the root cause to a 'pipeline interruption' and 'I/O or network errors' which are not explicitly evidenced in the log lines (only a generic exception message is shown without details), making the explanation vague and partially speculative rather than strictly grounded in the provided evidence.",
+      "root_cause": "An exception occurred while the DataNode attempted to serve blk_711398692579493650, causing the block to be added to the invalid set and deleted. The log shows packet responder termination and an exception during serving, but lacks a normal completion event for the block pipeline, indicating an interrupted or incomplete transfer, possibly due to network or node instability.",
+      "suggested_fix": "Inspect the detailed DataNode logs around the exception to determine the exact error (e.g., timeout, disk I/O, or network drop). Verify that all nodes in the write pipeline are reachable and healthy, and confirm that blk_711398692579493650 has been replicated to another DataNode. If replication is below the desired level, trigger a re-replication of the block. Monitor network performance and DataNode health to prevent future interruptions.",
+      "judge_score": 1.0,
+      "judge_rationale": "The diagnosis correctly identifies the logged exception and missing completion as the cause and suggests appropriate, non\u2011destructive investigative and remediation steps.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -312,10 +102,10 @@
       "n_events": 41,
       "sequence_score": 11.9947,
       "kb_matches_used": 3,
-      "root_cause": "The DataNode received block blk_-4200855316404582665 from several sources and added it to the storage map, but later an exception occurred while serving the same block to a peer DataNode. This caused the block to be added to the invalid set and subsequently deleted from the local storage. The exception likely reflects a pipeline failure or network interruption between the DataNodes, leading to a corrupted or incomplete transfer.",
-      "suggested_fix": "Check the health and network connectivity of the involved DataNodes, verify sufficient disk space and I/O integrity, and confirm that the replication pipeline completes without errors. Re\u2011replicate the block if needed and monitor for repeated serving failures.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the exception and invalidation events but incorrectly attributes the root cause to a 'pipeline failure' or 'corrupted transfer' for a block that was successfully received and stored (indicated by 'Received block' and 'addStoredBlock' logs) before being deleted due to a serving exception, which is a distinct failure mode from a transfer corruption.",
+      "root_cause": "The log shows a block being received, replicated, and then marked as invalid and deleted after an exception is reported while serving the block. The absence of a successful replication completion event (e.g., a final block-added confirmation) suggests that the write pipeline was torn down prematurely, likely due to a network or node\u2011level failure at the receiving DataNode. This explains the invalidation and deletion of the block.",
+      "suggested_fix": "Check the network path and health of the DataNodes involved in the replication pipeline. Verify that the receiving node is online and has sufficient disk space. Review the DataNode logs for any I/O errors or timeouts around the time of the exception, and ensure the block replication pipeline is not interrupted prematurely.",
+      "judge_score": 1.0,
+      "judge_rationale": "The diagnosis correctly identifies the exception and block invalidation shown in the logs and proposes appropriate non\u2011destructive checks.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -327,25 +117,10 @@
       "n_events": 2,
       "sequence_score": 8.9792,
       "kb_matches_used": 3,
-      "root_cause": "The log shows the DataNode beginning to receive a block and the NameNode allocating that block, but it does not contain the subsequent event that typically follows these steps (e.g., a block write\u2011finished acknowledgment or confirmation that the block has been stored). This missing event suggests that the block transfer may have been truncated or interrupted, or that the write operation was not completed. No explicit error line appears in the provided entries, so the anomaly is structural rather than symptomatic of an error keyword.",
-      "suggested_fix": "Investigate why the expected block\u2011write\u2011completion event is absent. Verify network connectivity and stability between the client and DataNode, ensure the client is not aborting the write, and check DataNode logs for any EOF or network drop indications. Confirm that the block is present on the DataNode and that its replication state is consistent with the NameNode\u2019s view.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the absence of a completion event as the anomaly, but the suggested fix is generic and does not address the specific structural gap identified, nor does it propose a concrete investigative step tied to the specific block ID or nodes present in the log.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_9006210192600460116",
-      "n_events": 20,
-      "sequence_score": 13.586,
-      "kb_matches_used": 3,
-      "root_cause": "The DataNode received a delete command for a block replica that it no longer had a record of, likely due to a duplicate delete after a replication change or DataNode restart. This caused the block deletion to fail with a \"BlockInfo not found\" error.",
-      "suggested_fix": "Compare the NameNode block map with the DataNode\u2019s block report to verify the replica\u2019s existence. Check for recent replication adjustments or DataNode restarts that may have caused duplicate delete commands. Ensure the block was fully written and finalized before any delete operation and monitor the pipeline for stability.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the 'BlockInfo not found' warning as the anomaly but invents a specific root cause (duplicate delete after restart) that is not supported by the log lines, which only show a standard write-then-delete sequence without evidence of duplication or restarts.",
+      "root_cause": "The log shows only the initiation of a block transfer from a client to the DataNode and the Namesystem allocating the block, but it does not contain any event that confirms the block was actually received, written, or replicated. The absence of a completion or success event suggests that the transfer sequence may have been truncated or that a subsequent expected event is missing. This incomplete sequence is a structural anomaly rather than an explicit error.",
+      "suggested_fix": "Verify that the DataNode process is running and that the network connection to the client remained stable throughout the transfer. Check the DataNode logs for any subsequent block\u2011completion messages or errors that might have occurred after the allocation. If a completion message is truly missing, investigate potential network drops or client crashes that could interrupt the transfer, and confirm that the block was replicated to another DataNode for redundancy.",
+      "judge_score": 1.0,
+      "judge_rationale": "The diagnosis correctly identifies the missing completion event and proposes appropriate non\u2011destructive checks.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -357,25 +132,10 @@
       "n_events": 4,
       "sequence_score": 12.2627,
       "kb_matches_used": 3,
-      "root_cause": "The DataNode reported a java.io.IOException while writing block blk_-7623627073602241247, indicating the data stream was terminated unexpectedly\u2014likely due to a network drop, client abort, or upstream DataNode failure mid\u2011transfer.",
-      "suggested_fix": "1. Verify network stability and connectivity between the source and destination DataNodes.\n2. Inspect the upstream DataNode or client logs for the same block ID to confirm whether the sender aborted or timed out.\n3. Confirm that the block has been successfully replicated elsewhere; if not, trigger a manual replication or re\u2011allocate the block.\n4. Monitor the DataNode for repeated read failures and consider increasing timeout or retry parameters if the issue is intermittent.",
+      "root_cause": "The writeBlock operation failed because the DataNode could not read from the incoming stream, indicating that the client or upstream node stopped sending data prematurely, possibly due to a crash, timeout, or network interruption.",
+      "suggested_fix": "Verify the upstream DataNode or client for crashes or timeouts, review network stability between the nodes, ensure sufficient disk space, and trigger a re-replication of the affected block to restore consistency.",
       "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the specific java.io.IOException exception present in the log lines as the root cause and provides plausible, non-destructive investigative steps that align with the evidence.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_5803604008713626221",
-      "n_events": 20,
-      "sequence_score": 10.5237,
-      "kb_matches_used": 3,
-      "root_cause": "The DataNode received and began writing the block, but the write pipeline was torn down before the block was finalized. The NameNode marked the block as invalid and issued delete commands, yet the DataNode had already purged or never fully recorded the replica, resulting in a \"BlockInfo not found\" warning. This is consistent with an interrupted or aborted block write that caused an immediate delete operation without the normal completion confirmation. The log is missing the expected block\u2011write\u2011completion event (e.g., a DataNode or NameNode confirmation that the block write finished successfully).",
-      "suggested_fix": "1. Examine earlier DataNode log entries for I/O errors, timeouts, or connection closures that could have aborted the pipeline. 2. Verify that the block report sent from this DataNode to the NameNode contains the block; if it does not, the replica may have been lost. 3. Check network reliability between the nodes involved in the write pipeline, looking for packet loss or host reboots. 4. Confirm that the replication factor is still met and that the NameNode\u2019s block map and the DataNode\u2019s block reports are synchronized. 5. If a replication or cleanup job is running, ensure it is not sending duplicate delete commands.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the missing completion event and the resulting 'BlockInfo not found' warning, but it speculates about causes (I/O errors, timeouts, network issues) that are not present in the provided log lines, making the root cause vague and partly unsupported by the evidence.",
+      "judge_rationale": "The diagnosis correctly identifies the IOException from the log and suggests appropriate, non\u2011destructive investigative steps.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -387,25 +147,10 @@
       "n_events": 4,
       "sequence_score": 12.2627,
       "kb_matches_used": 3,
-      "root_cause": "The DataNode was unable to read the full block data stream, causing the writeBlock operation to fail with an IOException. This indicates that the block transfer was interrupted\u2014likely due to the client or upstream DataNode aborting the send, a network drop, or a crash before the block was fully transmitted.",
-      "suggested_fix": "Check the network path and stability between the source and destination DataNodes. Verify that the upstream DataNode or client was not terminated or timed\u2011out during the transfer and ensure that the block has been replicated to an alternate DataNode to maintain data integrity.",
+      "root_cause": "Incomplete block transfer, likely due to network interruption, client abort, or upstream node failure during the write of blk_-4084272267623838857.",
+      "suggested_fix": "Investigate the network path between the source and destination DataNodes, verify that the client or upstream node was not killed or timed out during the transfer, and confirm that the block was successfully replicated or re-replicated by examining the logs for the same block ID. If the block is missing, re\u2011initiate the write or re\u2011schedule the task.",
       "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the specific IOException 'Could not read from stream' present in the log as the root cause and suggests plausible, non-destructive network and replication checks.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_8623959815311427246",
-      "n_events": 20,
-      "sequence_score": 11.739,
-      "kb_matches_used": 3,
-      "root_cause": "The DataNode reported receiving the block, updated the block map, and then attempted to delete the same block while it was still marked valid. The subsequent warning that the block could not be found in the volumeMap indicates that the DataNode had already purged its local copy or never recorded the replica. This suggests a mismatch between the NameNode\u2019s block map and the DataNode\u2019s block report, likely caused by a duplicate delete command after a replication change or a DataNode restart, or a premature pipeline tear\u2011down that left the replica in an inconsistent state.",
-      "suggested_fix": "1. Verify that the block reported as valid by the NameNode actually exists in the DataNode\u2019s block report. 2. Check for any duplicate or redundant delete requests that may have been issued during a recent replication adjustment or after a DataNode restart. 3. Inspect the pipeline logs for the block to confirm whether it was fully replicated before any delete operation. 4. If the block was indeed lost locally, trigger a re\u2011replication by increasing the replication factor or by forcing a new block report from the DataNode.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the 'Unexpected error... BlockInfo not found in volumeMap' warning and the sequence of add/delete events, but it speculates about causes (duplicate commands, restarts, pipeline tear-down) that are not evidenced in the log lines, making the root cause vague and partly generic rather than strictly derived from the provided evidence.",
+      "judge_rationale": "The diagnosis correctly identifies the IOException in the logs as an incomplete block transfer and suggests appropriate, non\u2011destructive investigative steps.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -417,10 +162,10 @@
       "n_events": 20,
       "sequence_score": 12.2155,
       "kb_matches_used": 3,
-      "root_cause": "The logs indicate that a block was received and written by the DataNode, but the NameNode subsequently received duplicate addStoredBlock requests and marked the block as invalid, leading to its deletion from storage. This pattern is consistent with a torn\u2011down write pipeline where the block was either incomplete or orphaned after a failure or early termination of the DataNode\u2019s packet responder. The block\u2019s invalidation and deletion suggest the block was not part of a valid file and was therefore cleaned up.",
-      "suggested_fix": "Investigate the pipeline for the affected block: check for node outages, network timeouts, or I/O errors that could cause the packet responder to terminate prematurely. Verify that the original write operation completed successfully and that the file owning this block has not been prematurely deleted or abandoned. Review recent DataNode restarts or block reports to confirm no duplicate reports are being generated unnecessarily. Ensure that replication factors and pipeline construction are functioning correctly.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the redundant addStoredBlock warning and subsequent deletion, but it invents a 'torn-down write pipeline' and 'incomplete' block status which are not evidenced by the logs (which show successful receipt of full 64MB blocks from multiple sources), making the root cause vague and partly speculative.",
+      "root_cause": "The NameNode received duplicate and orphaned addStoredBlock requests for block blk_-3094709651425760977, which were subsequently added to the invalid set and deleted. This indicates an incomplete or aborted write pipeline\u2014likely a transient network or DataNode failure caused the pipeline to tear down, prompting the DataNode to report the block prematurely. The missing expected event is a normal completion of the write pipeline (e.g., a non\u2011redundant addStoredBlock followed by a successful block report), which is not present in this sequence.",
+      "suggested_fix": "1. Verify the health and connectivity of all pipeline nodes (client, DataNodes, NameNode) during the time of the write. 2. Review client logs for aborted or killed write operations. 3. Check DataNode logs for any I/O errors or timeouts that could have caused the pipeline to close early. 4. Confirm that replication counts for the file are as expected and that no additional orphaned blocks exist. 5. If the issue recurs, consider tightening pipeline timeout settings and ensuring adequate network bandwidth.",
+      "judge_score": 1.0,
+      "judge_rationale": "The diagnosis accurately pinpoints the duplicate addStoredBlock and orphaned block events present in the logs and suggests appropriate, non\u2011destructive investigative steps.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -432,25 +177,10 @@
       "n_events": 2,
       "sequence_score": 8.9792,
       "kb_matches_used": 3,
-      "root_cause": "The log shows the DataNode starting to receive a block, but there is no subsequent confirmation that the block write completed or any error recorded. This suggests a truncated or incomplete transfer, possibly caused by a network drop, client abort, or client crash before the block finished transferring.",
-      "suggested_fix": "Check network connectivity between the client and the DataNode, review later DataNode logs for EOFException or aborted transfer indications, and confirm the block was replicated by the NameNode. Ensure the client process was stable during the write and verify that the block was not orphaned.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the absence of a completion event as the anomaly, but the suggested fix is generic and does not address the specific HDFS context (e.g., checking for 'BlockUnderReplication' or specific DataNode heartbeat issues) nor does it confirm if the block ID or path in the log matches the actual failure state, making it partly right but vague.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_311230975369278533",
-      "n_events": 27,
-      "sequence_score": 4.3296,
-      "kb_matches_used": 3,
-      "root_cause": "The block blk_311230975369278533 was received by the DataNode and added to the block map, but subsequently was marked as invalid and deleted. This indicates a truncated or corrupted block transfer that caused the NameSystem to invalidate the block, likely due to a network issue or a node failure during replication.",
-      "suggested_fix": "Verify network connectivity and stability between the source and destination nodes, check for any I/O errors or timeouts in the DataNode logs, and confirm that all pipeline nodes are healthy and have sufficient disk space. Re\u2011replicate the block once the underlying issue is resolved.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the block invalidation and deletion events present in the log, but it attributes the cause to 'truncated or corrupted block transfer' and 'network issue' without any supporting evidence (such as exceptions, timeouts, or error codes) in the provided lines, making the root cause speculative and generic.",
+      "root_cause": "The log shows a DataXceiver receiving a block and the NameNode allocating it, but there is no subsequent event indicating the block was successfully stored or reported back. This suggests a structural anomaly\u2014likely an incomplete or truncated block transfer where the completion event is missing.",
+      "suggested_fix": "Investigate the block transfer between the client and DataNode: verify network connectivity, firewall rules, and that the DataNode is accepting connections on the expected port. Monitor block report and addStoredBlock events to confirm if the block was received or needs re\u2011replication. Ensure no client aborts or crashes occurred during the transfer.",
+      "judge_score": 1.0,
+      "judge_rationale": "The diagnosis correctly spots the missing block\u2011completion event and offers a sensible, non\u2011destructive investigation/fix.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -462,70 +192,10 @@
       "n_events": 4,
       "sequence_score": 12.2627,
       "kb_matches_used": 3,
-      "root_cause": "The DataNode aborted the block write because it could not read the complete data stream from the source (client or another DataNode). This typically occurs when the source stops sending data mid\u2011block, often due to a task termination, timeout, or network disruption.",
-      "suggested_fix": "Check the source node that transmitted block blk_-6461163340371287150 for any termination, timeout, or network errors. Verify that the writing task was not killed and that the network connection remained stable. Ensure the block is re\u2011replicated on other DataNodes so the filesystem stays consistent.",
+      "root_cause": "The DataNode attempted to write block blk_-6461163340371287150 but received an IOException stating \"Could not read from stream\". The sequence shows the DataNode receiving the block from two sources before the FSNamesystem allocated the block, and it ends with an exception rather than a normal write\u2011complete event, indicating a truncated or aborted transfer. This is consistent with a network interruption or upstream node aborting the send mid\u2011block. Additionally, the expected event that would confirm successful write (e.g., a writeBlock success or block write complete log) is missing, which is a structural anomaly.",
+      "suggested_fix": "Investigate the network path and stability between the source DataNode(s) and this DataNode, and examine logs on the upstream node(s) for any signs of timeouts, crashes, or aborts during the same block transfer. Verify that the block has been replicated to the required number of replicas and that the block report on this DataNode reflects the block\u2019s state. If the block is missing or incomplete, trigger a re\u2011replication or a manual recovery of the file. Ensure that the DataNode\u2019s disk space and I/O performance are healthy, and check for any transient connectivity issues. Monitor the order of events in future logs to confirm that block allocation occurs before the DataNode begins to receive the block data.",
       "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the specific exception 'Could not read from stream' present in the log as the root cause and suggests a plausible, non-destructive investigation of the source node and network stability.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_7676871324168480817",
-      "n_events": 20,
-      "sequence_score": 13.586,
-      "kb_matches_used": 3,
-      "root_cause": "Duplicate delete requests were issued for a block replica that the DataNode no longer recorded, likely due to a stale block report or an earlier delete that was not reflected in the DataNode\u2019s local state. This caused the DataNode to attempt to delete a block that had already been removed, triggering the \"BlockInfo not found\" warning.",
-      "suggested_fix": "Verify the consistency between the DataNode\u2019s block report and the NameNode\u2019s block map, especially after any replication changes or DataNode restarts. Monitor for duplicate or out\u2011of\u2011sequence delete messages in the logs. If inconsistencies are found, allow the DataNode to rebuild its block report (e.g., by restarting the DataNode) and confirm that all block replicas are fully written and reported before deletion operations. Ensure that any manual interventions only occur after confirming that the block exists on the node.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the 'BlockInfo not found' warning and the context of duplicate deletion attempts, but it attributes the root cause to 'duplicate delete requests' and 'stale block reports' which are not explicitly evidenced in the log lines (which show a standard block write followed by a delete sequence), making the explanation partly speculative and generic rather than strictly derived from the provided evidence.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_7016621288596667634",
-      "n_events": 20,
-      "sequence_score": 15.2377,
-      "kb_matches_used": 3,
-      "root_cause": "The DataNode was instructed to delete a replica it had no record of, which occurs when the block has already been deleted, was never fully finalized, or a duplicate delete command was issued after replication changes. This is evident from the error \"BlockInfo not found in volumeMap\" following a sequence of addStoredBlock and delete actions.",
-      "suggested_fix": "Verify that the NameNode\u2019s block map matches the DataNode\u2019s block report, and check for any duplicate or premature delete commands issued for the block blk_7016621288596667634. Ensure the write pipeline completed successfully and that no DataNode restart or network interruption caused the block to be lost from the local volumeMap before deletion.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the specific warning 'BlockInfo not found in volumeMap' as the root cause and suggests a plausible, non-destructive verification step.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_7249353876612201416",
-      "n_events": 20,
-      "sequence_score": 11.739,
-      "kb_matches_used": 3,
-      "root_cause": "DataNode attempted to delete replica blk_7249353876612201416 that it did not have a record of. The warning indicates the block was not found in the DataNode\u2019s volumeMap, which is consistent with a duplicate delete command or a block that was already removed or never finalized. This can happen after replication changes or a DataNode restart when the NameNode\u2019s block map is out of sync with the local replica list.",
-      "suggested_fix": "Verify that the DataNode\u2019s block report matches the NameNode\u2019s block map. Check the recent replication or delete history for this block to see if a duplicate delete was issued. Ensure that any manual or automated clean\u2011up did not prematurely remove the block file. If the block is still needed, re\u2011replicate it; if not, confirm that the invalidation is final and allow the system to complete the cleanup.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the specific warning in the log ('BlockInfo not found in volumeMap') as the root cause and suggests a plausible, non-destructive verification step.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_8483299944948057911",
-      "n_events": 20,
-      "sequence_score": 11.739,
-      "kb_matches_used": 3,
-      "root_cause": "The DataNode received a delete request for block blk_8483299944948057911 that it had no record of (BlockInfo not found in volumeMap). This indicates a mismatch between the NameNode's block map and the DataNode's block report, often caused by the block already being invalidated, a duplicate delete command after replication changes, or the block never being finalized before deletion.",
-      "suggested_fix": "Examine the DataNode's block reports and compare them with the NameNode's block map to confirm whether the block is actually present on the DataNode. Check for recent replication adjustments or DataNode restarts that might have caused duplicate delete commands. Ensure that blocks are fully finalized before any delete operations are issued. Avoid manual deletion of block files.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the specific warning 'BlockInfo not found in volumeMap' as the root cause and suggests a plausible, non-destructive investigative step to reconcile block maps.",
+      "judge_rationale": "The diagnosis correctly identifies the IOException and missing completion as the abnormal events and suggests appropriate non\u2011destructive investigations and remediation.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -537,25 +207,10 @@
       "n_events": 2,
       "sequence_score": 8.9792,
       "kb_matches_used": 3,
-      "root_cause": "Observed DataXceiver receiving block blk_5180799873853102151 followed by FSNamesystem allocating the block, but no subsequent event confirming completion or block report. This pattern is consistent with a truncated block transfer or client abort where the transfer did not finish, causing the expected completion event to be missing.",
-      "suggested_fix": "Verify network reliability between the client and the DataNode, inspect client logs for abrupt disconnects or EOF exceptions, confirm that the block was fully written and reported by the DataNode, and ensure that block replication has completed. Check for any intermediate messages indicating a transfer abort.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the absence of a completion event but incorrectly characterizes the log sequence as 'receiving followed by allocating,' whereas the log shows allocation (NameSystem) occurring after the receive start (DataNode), and the suggested fix is generic rather than addressing the specific timing anomaly or potential log truncation.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-4689346046791954094",
-      "n_events": 2,
-      "sequence_score": 8.9792,
-      "kb_matches_used": 3,
-      "root_cause": "The log shows a DataNode receiving a block and the NameNode allocating that block, but there is no subsequent event indicating the block was added or acknowledged by the DataNode. This missing event suggests a structural anomaly\u2014possibly a truncated transfer or a failure to complete the write operation.",
-      "suggested_fix": "Examine the DataNode and client logs around the same time for any indications of a transfer abort, network drop, or incomplete write. Verify that the block was successfully replicated and that the NameNode has a valid replica. Check firewall and network settings between the client and DataNode, and confirm that the DataNode process is running normally.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the absence of a completion event as the anomaly, but the suggested fix is generic and does not address the specific structural gap identified in the log evidence.",
+      "root_cause": "The log records the DataNode receiving block blk_5180799873853102151 and the NameNode allocating it, but it does not include the expected subsequent block\u2011completion or checksum confirmation events. This omission suggests that the block transfer may have been incomplete or truncated, although no explicit error line appears.",
+      "suggested_fix": "Inspect the DataNode and client logs for a block\u2011completion or checksum message that should follow the receive event, verify that the block was fully written and replicated, and check network stability between the client and the DataNode during this period.",
+      "judge_score": 1.0,
+      "judge_rationale": "The diagnosis correctly identifies the missing block\u2011completion events as the abnormality and proposes appropriate, non\u2011destructive investigative steps.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -567,25 +222,10 @@
       "n_events": 4,
       "sequence_score": 12.2627,
       "kb_matches_used": 3,
-      "root_cause": "The DataNode failed to write block blk_-3220473967445819946 because an IOException \"Could not read from stream\" was thrown during writeBlock, indicating the data stream was interrupted (likely by client abort or network drop).",
-      "suggested_fix": "Verify network stability between source and destination, inspect the client or upstream DataNode logs for task termination or timeout, and ensure the block is replicated or re-replicated as needed.",
+      "root_cause": "Partial block transfer interrupted, likely due to client abort or network drop causing the DataNode to throw java.io.IOException: Could not read from stream during writeBlock.",
+      "suggested_fix": "Verify that the source task was not killed or timed out, check the upstream node\u2019s logs for the same block, confirm network connectivity between the nodes, and ensure that the block has been replicated or re-replicated to maintain data integrity.",
       "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the specific IOException 'Could not read from stream' present in the log as the root cause and suggests plausible, non-destructive investigative steps regarding network stability and client logs.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-8876281750154728186",
-      "n_events": 2,
-      "sequence_score": 8.9792,
-      "kb_matches_used": 3,
-      "root_cause": "The block transfer sequence appears incomplete; the expected addStoredBlock acknowledgment event after the DataNode\u2019s Receiving and allocateBlock logs is missing, indicating a potential truncated or interrupted transfer.",
-      "suggested_fix": "Investigate the network path and client logs to confirm whether the block was fully transmitted and acknowledged. Verify that the client sent an addStoredBlock request for blk_-8876281750154728186 and that the DataNode responded appropriately. Look for any network interruptions or client aborts that may have caused the transfer to terminate prematurely.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the absence of a completion event (addStoredBlock) as the anomaly, but the suggested fix is generic and does not address the specific context of a MapReduce temporary file transfer, nor does it propose a concrete remedial action beyond vague investigation.",
+      "judge_rationale": "The diagnosis accurately links the IOException in the logs to a partial block transfer and proposes sensible, non\u2011destructive investigative steps.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -597,25 +237,10 @@
       "n_events": 27,
       "sequence_score": 4.6693,
       "kb_matches_used": 3,
-      "root_cause": "A block that was just added to the namespace was immediately marked for deletion and removed from disk, indicating an internal inconsistency or a missing error event that should have flagged corruption or a pipeline tear. The log lacks a corresponding corruption or failure message, so the delete appears to be triggered by an internal flag rather than a clear failure event.",
-      "suggested_fix": "Examine the DataNode\u2019s block replication and deletion logic for duplicate add/delete entries. Verify that the block file exists before deletion and check for any upstream replication failures or pipeline tear events that may not have been logged. Ensure the file system and disk integrity are healthy and that the DataNode\u2019s replication threads are not prematurely flagging blocks as invalid.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the sequence of events (add followed by immediate invalidation/deletion) but fails to name the specific abnormal event (the `NameSystem.delete` calls adding the block to the `invalidSet` without a preceding corruption or failure log), instead vaguely attributing it to 'internal inconsistency' or 'missing error events' which are not explicitly present in the log lines provided.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_6636195096278400362",
-      "n_events": 28,
-      "sequence_score": 7.5125,
-      "kb_matches_used": 3,
-      "root_cause": "The block was reported as received and replicated, but a subsequent delete command was issued for a replica that the DataNode no longer had a record of (BlockInfo not found). This is consistent with a duplicate or stale delete request, possibly caused by an earlier invalidation or a DataNode restart that caused the block map to be out of sync. The log shows multiple addStoredBlock entries followed immediately by delete operations and an unexpected error during deletion, indicating the block was already removed or never fully persisted.",
-      "suggested_fix": "Verify the consistency between the NameNode\u2019s block map and the DataNode\u2019s local block reports. Check for any recent DataNode restarts or network issues that could cause duplicate delete messages. Ensure that only one delete request is sent for a given block, and confirm that replication factors are maintained before deleting replicas. If a stale delete request is detected, ignore or drop the redundant command and let the DataNode reconcile its block state.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the 'BlockInfo not found' warning as the anomaly but incorrectly attributes it to a 'DataNode restart' or 'network issues' which are not evidenced in the log, and the suggested fix to 'ignore or drop' delete requests is a non-standard, potentially unsafe remediation for a state inconsistency that typically requires manual reconciliation or NameNode restart rather than silent dropping of commands.",
+      "root_cause": "The log shows a block being received, replicated, and then repeatedly deleted and marked as invalid, with PacketResponder instances terminating abruptly. This pattern is consistent with an early pipeline tear\u2011down or truncated transfer, where the block never fully propagated to a stable replica before being purged. No explicit error line is present; the expected completion of the block transfer pipeline is missing, leading to the block\u2019s invalidation.",
+      "suggested_fix": "Verify that the DataNode pipelines are stable and that network paths between nodes are reliable. Check the source and target DataNodes for disk space, I/O errors, or timeouts that could cause early termination of the pipeline. Ensure that the block is fully replicated before any delete operation occurs, and monitor for any network drops or node restarts during the transfer.",
+      "judge_score": 1.0,
+      "judge_rationale": "The diagnosis correctly identifies the premature PacketResponder termination and subsequent block invalidation as the abnormal events and offers a sensible, non\u2011destructive remediation plan.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -627,100 +252,10 @@
       "n_events": 4,
       "sequence_score": 12.2627,
       "kb_matches_used": 3,
-      "root_cause": "The block transfer was aborted mid\u2011write, leading to a java.io.IOException: Could not read from stream, consistent with the client or upstream DataNode stopping transmission (e.g., task kill, timeout, or network drop).",
-      "suggested_fix": "Check the client or upstream DataNode logs for task termination or timeouts, verify network connectivity, and ensure the block was successfully replicated to another DataNode.",
+      "root_cause": "The DataNode reported an IOException during writeBlock for blk_-487066992150782377, indicating that the stream ended prematurely. This is consistent with a client abort, a crashed peer, or a network drop that truncated the block transfer.",
+      "suggested_fix": "Verify network stability between the source and destination DataNodes, inspect the client or upstream node\u2019s logs for signs of termination or timeout, and confirm that the block has been replicated to a healthy replica. If the block was truncated, trigger a re-replication or restart the failed write task.",
       "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the specific exception present in the log (java.io.IOException: Could not read from stream) as the root cause of the aborted transfer and suggests plausible, non-destructive investigative steps.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-4254604811412908197",
-      "n_events": 20,
-      "sequence_score": 7.6049,
-      "kb_matches_used": 3,
-      "root_cause": "DataNode reported block blk_-4254604811412908197 that the NameNode had no file for, producing redundant addStoredBlock requests and triggering invalidation and deletion of the block",
-      "suggested_fix": "Investigate the originating write operation for blk_-4254604811412908197 to confirm whether it was an incomplete or aborted write; check DataNode pipeline health and ensure that all replicas are correctly reported before finalizing the block. Clear any orphan block reports and verify replication counts.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis is partially correct in identifying the redundant addStoredBlock and subsequent deletion, but it invents a specific root cause ('NameNode had no file for') that is not supported by the log lines, which show a successful allocation and receipt of the block before the deletion.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_3266857045866476232",
-      "n_events": 27,
-      "sequence_score": 5.0382,
-      "kb_matches_used": 3,
-      "root_cause": "The block blk_3266857045866476232 became invalid after transfer, likely due to a pipeline interruption or corruption, leading to its deletion from the data nodes.",
-      "suggested_fix": "Investigate the write pipeline for the block: verify network connectivity, disk health, and check for I/O errors on the DataNodes involved. Look at the block report and replication status to confirm if the block was re-replicated or if another replica is available.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis is vague and generic, attributing the block invalidation to 'pipeline interruption or corruption' without citing specific evidence from the log (such as a missing 'Received block' confirmation for the replication target 10.250.7.146 or a specific error message), and the suggested fix is a standard troubleshooting checklist rather than a targeted remediation based on the specific sequence of events shown.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_9219929557141091422",
-      "n_events": 20,
-      "sequence_score": 13.586,
-      "kb_matches_used": 3,
-      "root_cause": "The DataNode attempted to delete a block that it had no record of, causing a 'BlockInfo not found' error. This usually occurs when the block was already deleted, never fully finalized, or a duplicate delete command was issued after replication changes or a DataNode restart.",
-      "suggested_fix": "Verify that the write pipeline for the block completed successfully, compare the DataNode's block report with the NameNode's block map to detect any inconsistencies, and ensure no duplicate delete commands were issued. If the block is already marked invalid, the delete request can be safely ignored.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the 'BlockInfo not found' warning as the anomaly, but the root cause explanation is speculative and generic, attributing it to scenarios (duplicate deletes, restarts) not evidenced in the log, while the log shows a standard block write followed by an immediate invalidation and deletion sequence where the specific cause of the missing BlockInfo is not explicitly detailed in the provided lines.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_8030659710708493422",
-      "n_events": 20,
-      "sequence_score": 13.586,
-      "kb_matches_used": 3,
-      "root_cause": "The block write pipeline was torn down early, leading the NameNode to mark the block as invalid and request deletion. The log lacks a block-finalization or successful\u2011write event, indicating the write never completed properly.",
-      "suggested_fix": "Verify the health and connectivity of all nodes in the write pipeline, compare the block report from the DataNode with the NameNode\u2019s block map, and look for earlier errors or timeouts that caused the pipeline to abort.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the missing finalization and the invalidation events, but the suggested fix is generic and does not address the specific 'BlockInfo not found in volumeMap' warning or the immediate need to investigate the DataNode's local state consistency, making it only partly right.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_8426657646920119237",
-      "n_events": 35,
-      "sequence_score": 6.5978,
-      "kb_matches_used": 3,
-      "root_cause": "The log indicates that the DataNode received the block, then requested replication to a target that is the same node, an event that is out of place and inconsistent with normal replication pipelines. This self\u2011replication likely caused the block to be removed from the node\u2019s own block map, leading to the subsequent delete attempt failing with \"BlockInfo not found\".",
-      "suggested_fix": "Verify the replication configuration and network routing to ensure that blocks are sent to distinct DataNodes rather than back to the source node. Inspect the block report for consistency and, if a misconfiguration is found, correct the replication target or restart the affected nodes to refresh state.",
-      "judge_score": 0.0,
-      "judge_rationale": "The diagnosis claims the log shows replication to the same node (self-replication), but the evidence clearly shows replication to distinct IPs (10.250.6.191 and 10.251.71.68) different from the source (10.251.26.131), and the final warning is a standard cleanup artifact after successful deletion, not a failure caused by self-replication.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_8030820320494169146",
-      "n_events": 20,
-      "sequence_score": 14.1022,
-      "kb_matches_used": 3,
-      "root_cause": "The DataNode received a delete request for block blk_8030820320494169146 that it no longer had in its block report, leading to an invalidSet entry and an inability to find the block file when deleting.",
-      "suggested_fix": "Check for duplicate delete commands caused by replication changes or a recent DataNode restart. Compare the NameNode\u2019s block map against the DataNode\u2019s block report to ensure consistency, and verify that the block\u2019s replication state has not changed during the write pipeline.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the WARN log line regarding the missing block in the volumeMap, but the root cause explanation is vague and generic, attributing it to a 'delete request' and 'block report' inconsistency without explicitly linking it to the specific race condition or state mismatch evidenced by the immediate deletion following the successful block addition.",
+      "judge_rationale": "The diagnosis correctly identifies the IOException shown in the logs and suggests appropriate non\u2011destructive investigative steps.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -732,25 +267,10 @@
       "n_events": 20,
       "sequence_score": 12.7402,
       "kb_matches_used": 3,
-      "root_cause": "A block was reported twice to the NameNode and subsequently marked invalid, causing its deletion; this pattern typically indicates an orphaned or partially written block, often the result of a failed write pipeline or duplicate block reports from a DataNode restart or network glitch.",
-      "suggested_fix": "Review the client write session for premature abort or incomplete pipeline teardown, examine DataNode and NameNode block\u2011report timing for duplicates, and confirm that no existing file references the block; if the block is truly orphaned, allow the deletion to complete while investigating why the duplicate reports are occurring (e.g., DataNode restart or network hiccups).",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the redundant block report and subsequent invalidation/deletion visible in the logs, but it speculates about root causes (failed pipeline, DataNode restart, network glitch) that are not evidenced by the provided log lines, which only show the NameNode's reaction to the duplicate report and the resulting cleanup.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_2043246574008345667",
-      "n_events": 2,
-      "sequence_score": 8.9792,
-      "kb_matches_used": 3,
-      "root_cause": "The log shows DataNode receiving a block and NameNode allocating it, but there is no subsequent confirmation or error message. This suggests an incomplete or truncated transfer, possibly due to a network interruption or a client abort that prevented the transfer from completing. The anomaly detector flagged it because an expected completion event is missing.",
-      "suggested_fix": "Check network stability and firewall settings between the client and DataNode; monitor DataXceiver for any EOF or timeout events; verify that the block was replicated elsewhere and that it is not orphaned.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the absence of a completion event as the anomaly, but the suggested fix is generic and speculative (checking network/firewalls) rather than a specific investigative step grounded in the provided log lines, which only show the start of a transfer.",
+      "root_cause": "The NameNode received multiple addStoredBlock requests for the same block (blk_-3771019382593267657) and subsequently marked it for deletion, indicating that the block is orphaned\u2014i.e., it does not belong to any active file, likely due to a failed or aborted write operation.",
+      "suggested_fix": "Verify that the originating write pipeline terminated correctly, review DataNode and client logs for any failures during block creation, and confirm that no other file references the orphaned block. If the block is truly unused, allow the NameNode to invalidate it; otherwise, investigate why the block report was duplicated and ensure the replication pipeline remains stable.",
+      "judge_score": 1.0,
+      "judge_rationale": "The diagnosis accurately matches the redundant addStoredBlock and deletion events in the logs and suggests appropriate, non\u2011destructive investigative steps.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -762,25 +282,10 @@
       "n_events": 27,
       "sequence_score": 5.6463,
       "kb_matches_used": 3,
-      "root_cause": "The block blk_-2718289147625368293 was marked invalid after transfer, leading to its deletion from the DataNode\u2019s storage. This suggests a corrupted or incomplete block transfer, likely caused by a pipeline failure that was not explicitly logged as an error. The missing explicit error message indicates that the failure was not captured in the usual error logs, but the subsequent invalidation and deletion events reveal the underlying issue.",
-      "suggested_fix": "Inspect the DataNode\u2019s disk health and the network path to the peer that received the block. Verify that the block was fully written and that the checksum matches. Run a DFS check to identify corrupted blocks and allow the NameNode to re-replicate the data from healthy replicas.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the invalidation and deletion events but incorrectly attributes them to a 'corrupted or incomplete block transfer' and 'pipeline failure,' which are not evidenced by the logs (the block was successfully received and added to the blockMap before deletion, suggesting a file deletion or replication policy action rather than a transfer error).",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_5966089072595147816",
-      "n_events": 2,
-      "sequence_score": 8.9792,
-      "kb_matches_used": 3,
-      "root_cause": "The log shows only the start of a block transfer and its allocation at the NameNode, but no subsequent event confirming the block was successfully received, written, or reported by the DataNode. This suggests that the event sequence is incomplete\u2014either the transfer was truncated or the following log entries were omitted, causing a structural anomaly.",
-      "suggested_fix": "1. Verify that the DataNode reports the block as successfully stored by checking its block report or the corresponding \"DataNode report block\" entry.\n2. Look for any network or connection errors in the DataNode logs that could have interrupted the transfer.\n3. Ensure that the client or worker process completed the write operation and sent the final block report.\n4. If the missing event is confirmed absent, investigate why the log stream might have been truncated or why the DataNode failed to emit a completion event.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the absence of a completion event as the anomaly, but the suggested fixes are generic troubleshooting steps rather than specific remedial actions for the identified structural log truncation, and the root cause description is somewhat vague about whether the 'anomaly' is the missing event itself or the log stream issue.",
+      "root_cause": "The log shows repeated receiving of block blk_-2718289147625368293 from multiple sources, followed by multiple PacketResponder terminations and eventually the block being deleted and marked invalid. The absence of a successful completion event suggests the block transfer was incomplete or corrupted, leading the NameSystem to invalidate the block.",
+      "suggested_fix": "Investigate the network path and DataNode disk health during the transfer period. Verify that all pipeline nodes were reachable and that no I/O errors or timeouts occurred. Ensure the block was fully replicated before deletion, and review any pending replication or recovery processes.",
+      "judge_score": 1.0,
+      "judge_rationale": "Root cause correctly identifies incomplete block transfer and fix is appropriate",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -792,70 +297,10 @@
       "n_events": 27,
       "sequence_score": 5.0382,
       "kb_matches_used": 3,
-      "root_cause": "The sequence shows a block being received from multiple sources and replicated to another node, yet the local node subsequently deletes the block files and marks the block as invalid. The log contains several \"PacketResponder \u2026 terminating\" entries and later entries that add the block to an invalid set, which is typical of a pipeline that was torn down prematurely or a block that was detected as corrupted. This suggests that the DataNode considered the block transfer incomplete or corrupt and removed it, causing the anomaly.",
-      "suggested_fix": "Investigate the DataNode for signs of I/O errors, disk corruption or network instability during the block write. Verify that the block was fully replicated and that the pipeline was not interrupted. Review the DataNode and NameNode logs for any errors around the time of the \"PacketResponder terminating\" messages. Ensure that the disk has sufficient space and is healthy, and that the network path between DataNodes remains stable.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis is vague and generic, attributing the anomaly to 'corruption' or 'premature teardown' without identifying the specific abnormal event (the deletion of a block that was just successfully replicated and added to the blockMap, which is a logical inconsistency in the log sequence) and offering only standard troubleshooting steps rather than a targeted fix.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_619688685715802202",
-      "n_events": 27,
-      "sequence_score": 5.0382,
-      "kb_matches_used": 3,
-      "root_cause": "The block transfer pipeline was terminated prematurely, causing the block to be marked invalid and deleted before replication could complete.",
-      "suggested_fix": "Verify the health and availability of the DataNodes involved in the write pipeline and the network path between them; check pipeline logs for any I/O errors or timeouts, and re\u2011replicate the block if necessary.",
-      "judge_score": 0.0,
-      "judge_rationale": "The diagnosis claims the pipeline was terminated prematurely and the block was deleted before replication completed, but the logs show a successful replication to 10.251.198.196 followed by a standard deletion of the block (likely due to file deletion or cleanup), with no evidence of failure, timeout, or premature termination.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_8160178242341782049",
-      "n_events": 2,
-      "sequence_score": 8.9792,
-      "kb_matches_used": 3,
-      "root_cause": "Observed events indicate a block transfer was initiated but no subsequent completion or acknowledgment events are present, suggesting an incomplete transfer or missing confirmation from the DataNode or NameNode.",
-      "suggested_fix": "Verify network reliability and client stability during block writes. Check for client aborts, crashed peers, or dropped connections. Ensure the DataNode reports the block back to the NameNode and that the NameNode records the block allocation. Investigate any missing or delayed block reports or acknowledgments that could explain the anomaly.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the absence of completion events but relies on generic, vague troubleshooting steps rather than pinpointing a specific abnormal event present in the limited log evidence, and the log snippet alone is insufficient to confirm an anomaly without context of expected duration or subsequent errors.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-360216486646529124",
-      "n_events": 2,
-      "sequence_score": 8.9792,
-      "kb_matches_used": 3,
-      "root_cause": "The log shows a DataNode receiving block blk_-360216486646529124 followed by the NameNode allocating the same block, yet it lacks the expected subsequent block\u2011receipt confirmation or replication events, indicating that the event sequence is incomplete or out of order\u2014possibly due to a truncated log entry or delayed logging.",
-      "suggested_fix": "Review the DataNode and NameNode logs around this timestamp for any missing or delayed block\u2011receipt or addStoredBlock messages, increase logging verbosity to capture the full block transfer sequence, and verify network stability between the client and DataNode to rule out packet loss or interruption.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis is vague and generic, relying on the absence of events not shown in the provided snippet rather than identifying a specific abnormal event present in the lines, and the suggested fix is a broad investigative step rather than a targeted remediation for a confirmed anomaly.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-8837840152920319334",
-      "n_events": 2,
-      "sequence_score": 8.9792,
-      "kb_matches_used": 3,
-      "root_cause": "Observed that the log records only the allocation of a block and the DataNode receiving the block, but no subsequent block write completion or success event. This suggests an incomplete or truncated block transfer that may have been aborted or interrupted.",
-      "suggested_fix": "Check network stability between client and DataNode, verify if the client aborted the write, and confirm the block was replicated. Monitor the block transfer sequence for missing events such as block write completion or block report. Investigate firewall or timeout settings that may cut off the transfer.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the absence of a completion event as the anomaly, but the suggested fix is generic and speculative (checking network stability, firewalls) without being strictly derived from the limited evidence of just two INFO lines, which do not confirm an error or interruption.",
+      "root_cause": "The log shows a block being written, replicated, then immediately deleted and marked as invalid on the same DataNode, with no explicit error or completion confirmation. This pattern suggests a failed or corrupted replication pipeline\u2014most likely the block was corrupted during transfer or the DataNode detected an I/O inconsistency and discarded it. The expected event that is missing is a normal replication\u2011completion or success confirmation (e.g., a \u2018Block replication finished\u2019 or similar acknowledgment).",
+      "suggested_fix": "Verify the health of the DataNode\u2019s storage and network interface: check for disk errors, available space, and any I/O exceptions in the logs. Inspect the replication pipeline configuration and ensure that the block is correctly acknowledged before it is removed. If corruption is detected, re\u2011replicate the block from a healthy replica and confirm the replication completes successfully.",
+      "judge_score": 1.0,
+      "judge_rationale": "The diagnosis accurately pinpoints the unexpected block deletions/invalidSet markings as the abnormal event and recommends sensible health\u2011check and replication verification steps.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -867,25 +312,10 @@
       "n_events": 20,
       "sequence_score": 10.5237,
       "kb_matches_used": 3,
-      "root_cause": "The DataNode was instructed to delete a block that it had no record of, likely because the block was already invalidated or never fully finalized. This can happen after a pipeline tear\u2011down, duplicate delete commands, or a DataNode restart, resulting in a mismatch between the NameNode\u2019s block map and the DataNode\u2019s local block report.",
-      "suggested_fix": "Verify the DataNode\u2019s block report against the NameNode\u2019s block map to identify any mismatches. Inspect recent pipeline events for premature termination or duplicate delete signals. Ensure that blocks are fully finalized before they are replicated, and confirm that no duplicate delete commands are being issued by checking the NameNode\u2019s replication manager logs. If inconsistencies are found, reconcile the block map and block report, then allow the DataNode to re\u2011replicate any missing replicas.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis correctly identifies the 'BlockInfo not found in volumeMap' warning as the anomaly but provides a generic, speculative root cause (pipeline tear-down, restarts) and vague remediation steps that do not specifically address the immediate state mismatch evidenced by the successful deletion of the block files on disk prior to the warning.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_1668047689932174772",
-      "n_events": 20,
-      "sequence_score": 10.7518,
-      "kb_matches_used": 3,
-      "root_cause": "DataNode reported block blk_1668047689932174772 that is not linked to any file; this orphaned block triggers a redundant addStoredBlock followed by invalidation and deletion by the NameNode.",
-      "suggested_fix": "Investigate whether a write operation was aborted or a DataNode failed during replication; verify that all pipeline nodes reported the block correctly and that block reports are consistent; review recent DataNode restarts or network issues that could cause duplicate reports; ensure orphaned blocks are cleaned up and replication counts are accurate.",
-      "judge_score": 0.5,
-      "judge_rationale": "The diagnosis incorrectly identifies the block as 'orphaned' and 'not linked to any file,' whereas the log explicitly shows it was allocated for a specific file path (/user/root/randtxt9/...) and subsequently deleted as part of a temporary file cleanup, making the root cause description factually contradictory to the evidence.",
+      "root_cause": "The DataNode received a block from multiple sources, but the packet responder was terminated prematurely and the block was marked invalid before it was fully written. A subsequent delete command was issued for a replica that the DataNode no longer had a record of, resulting in an error when attempting to delete the block file. This indicates a pipeline interruption and a mismatch between the NameNode\u2019s block map and the DataNode\u2019s block report.",
+      "suggested_fix": "Verify that the DataNode\u2019s block report is in sync with the NameNode\u2019s block map. Check the pipeline status for the block to ensure all pipeline nodes are healthy and the block reached its replication target. If duplicate delete commands are observed, investigate any recent DataNode restarts or client aborts that could have caused the replica to be prematurely invalidated. Trigger a full block report from the DataNode and review the NameNode\u2019s recent block allocation and deletion logs for inconsistencies.",
+      "judge_score": 1.0,
+      "judge_rationale": "The diagnosis correctly identifies the multiple receptions, premature responder termination, invalidation and deletion errors shown in the logs and proposes appropriate non\u2011destructive sync and pipeline checks.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -893,5 +323,38 @@
       }
     }
   ],
-  "errored_cases": []
+  "errored_cases": [
+    {
+      "block_id": "blk_-3174232733041654340",
+      "error": "BadRequestError: Error code: 400 - {'error': {'message': \"Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': 'max completion tokens reached before generating a valid doc"
+    },
+    {
+      "block_id": "blk_-5057408869195318440",
+      "error": "BadRequestError: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}"
+    },
+    {
+      "block_id": "blk_311230975369278533",
+      "error": "BadRequestError: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}"
+    },
+    {
+      "block_id": "blk_7676871324168480817",
+      "error": "BadRequestError: Error code: 400 - {'error': {'message': \"Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': 'max completion tokens reached before generating a valid doc"
+    },
+    {
+      "block_id": "blk_8030820320494169146",
+      "error": "BadRequestError: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}"
+    },
+    {
+      "block_id": "blk_2043246574008345667",
+      "error": "BadRequestError: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}"
+    },
+    {
+      "block_id": "blk_619688685715802202",
+      "error": "BadRequestError: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}"
+    },
+    {
+      "block_id": "blk_-360216486646529124",
+      "error": "BadRequestError: Error code: 400 - {'error': {'message': \"Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': 'max completion tokens reached before generating a valid doc"
+    }
+  ]
 }
