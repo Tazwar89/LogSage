@@ -1,36 +1,38 @@
 {
-  "seed": 7,
+  "seed": 13,
   "judge_model": "openai/gpt-oss-120b",
   "generator_model": "openai/gpt-oss-20b",
   "blocks_sampled": 60,
   "blocks_not_found_in_log": 0,
   "detector_on_sample": {
-    "tp": 28,
-    "fn": 2,
+    "tp": 29,
+    "fn": 1,
     "fp": 0,
     "normal_scored": 30
   },
-  "diagnosed_cases": 20,
+  "diagnosed_cases": 8,
+  "errored_cases_count": 21,
+  "error_rate_of_tp": 0.7241,
   "judge_pass_rate": 1.0,
   "judge_pass_rate_95ci": [
-    0.8389,
+    0.6756,
     1.0
   ],
   "mean_judge_score": 1.0,
-  "end_to_end_rate_incl_missed": 0.6667,
+  "end_to_end_rate_incl_missed": 0.2667,
   "ungrounded_path_rate": 0.0,
   "destructive_command_rate": 0.0,
-  "cases_with_kb_match": 20,
+  "cases_with_kb_match": 8,
   "cases": [
     {
-      "block_id": "blk_804832521706127820",
-      "n_events": 4,
-      "sequence_score": 13.5276,
+      "block_id": "blk_8184016686996902211",
+      "n_events": 25,
+      "sequence_score": 11.1065,
       "kb_matches_used": 3,
-      "root_cause": "The block transfer for blk_804832521706127820 was interrupted mid-stream, likely due to the client or upstream DataNode terminating or timing out before sending the full data, causing DataXceiver to throw java.io.IOException: Could not read from stream.",
-      "suggested_fix": "Inspect the logs of the upstream node and the client for any abrupt termination or timeout related to blk_804832521706127820. Verify network stability between the source and destination DataNodes, confirm sufficient disk space on the target, and if the block was not fully replicated, re-replicate the block or restart the write operation.",
+      "root_cause": "The DataNode received multiple delete requests for the same block, likely due to a pipeline tear\u2011down or a node restart, causing it to try to delete a block it no longer tracks. This results in a \"BlockInfo not found in volumeMap\" warning.",
+      "suggested_fix": "Compare the DataNode\u2019s block report with the NameNode\u2019s block map to confirm whether the block was already invalidated. Inspect recent pipeline failures or node restarts that could trigger duplicate delete commands. Verify that all nodes in the write pipeline are healthy and that the block\u2019s replication factor is maintained.",
       "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the IOException in the logs as the abnormal event and offers appropriate, non\u2011destructive investigative steps.",
+      "judge_rationale": "The diagnosis correctly identifies the multiple delete events and the resulting BlockInfo warning and offers appropriate investigative steps.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -38,14 +40,14 @@
       }
     },
     {
-      "block_id": "blk_764636892057988335",
-      "n_events": 33,
-      "sequence_score": 8.3666,
+      "block_id": "blk_8181549678675893334",
+      "n_events": 20,
+      "sequence_score": 11.2224,
       "kb_matches_used": 3,
-      "root_cause": "The logs indicate an orphaned block that was allocated and received by several DataNodes, subsequently reported by a DataNode to the NameNode as belonging to no file. This is consistent with a prematurely aborted or torn\u2011down write pipeline that left a replica in the cluster. The repeated \"Got exception while serving\" warnings and the block\u2019s addition to the invalid set confirm that the block was never properly linked to a file and was later removed.",
-      "suggested_fix": "Investigate the job that allocated the block for possible failures or premature termination. Verify network stability between DataNodes and the NameNode during block creation. Ensure that write pipelines are fully established before the block is reported as stored. Review recent cluster events for any node outages or I/O errors that could have caused the pipeline to tear down early. If orphaned blocks are a recurring issue, consider enabling stricter pipeline validation or automated cleanup of orphaned replicas.",
+      "root_cause": "The DataNode was instructed to delete a block that it no longer recognizes, likely due to duplicate delete commands or a stale block report after the block was already removed or never finalized. The block info was missing from the local volumeMap, causing the deletion warning.",
+      "suggested_fix": "Verify that the NameNode\u2019s block map matches the DataNode\u2019s block report. Check for duplicate delete requests or a recent DataNode restart. Ensure the block was fully written and finalized before deletion. If the block is confirmed missing, allow the DataNode to sync its block report with the NameNode. Do not manually delete the block files.",
       "judge_score": 1.0,
-      "judge_rationale": "The diagnosis accurately identifies the orphaned block indicated by allocation, serving exceptions, invalidSet entries, and the 'does not belong to any file' message, and proposes appropriate, non\u2011destructive investigative and remedial actions.",
+      "judge_rationale": "The diagnosis correctly identifies the unexpected delete of a missing block and offers appropriate non\u2011destructive checks.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -53,14 +55,14 @@
       }
     },
     {
-      "block_id": "blk_-734505675470044801",
-      "n_events": 4,
-      "sequence_score": 13.5276,
+      "block_id": "blk_8210861958769620103",
+      "n_events": 21,
+      "sequence_score": 10.7777,
       "kb_matches_used": 3,
-      "root_cause": "The DataNode's DataXceiver encountered a java.io.IOException stating \"Could not read from stream\" while writing block blk_-734505675470044801, indicating a mid-transfer interruption, likely due to a network drop, client abort, or upstream DataNode failure.",
-      "suggested_fix": "Investigate the client or upstream DataNode logs for a corresponding timeout or abort for the same block ID, verify network connectivity and stability between the involved nodes, and confirm that the block was re-replicated on another DataNode to avoid data loss.",
+      "root_cause": "The NameNode sent multiple delete requests for blk_8210861958769620103 that the DataNode had already removed or never finalized, causing the DataNode to attempt deletion of a nonexistent block. This likely stems from a replication change or DataNode restart that caused duplicate delete commands.",
+      "suggested_fix": "Check the DataNode\u2019s block report against the NameNode\u2019s block map to verify consistency. Look for any recent DataNode restarts or replication adjustments that may have triggered redundant delete commands. Ensure that block deletion is only processed when a valid replica exists and that duplicate delete requests are suppressed.",
       "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the IOException shown in the logs and proposes appropriate, non\u2011destructive investigative steps.",
+      "judge_rationale": "The diagnosis accurately links the repeated delete entries and the warning about missing BlockInfo to redundant delete requests and proposes sensible consistency checks.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -68,14 +70,44 @@
       }
     },
     {
-      "block_id": "blk_-6864409266499875202",
+      "block_id": "blk_5229240184982419822",
+      "n_events": 22,
+      "sequence_score": 9.3872,
+      "kb_matches_used": 3,
+      "root_cause": "Orphaned block from an aborted or killed task causing a duplicate addStoredBlock after deletion",
+      "suggested_fix": "Investigate why the block was removed yet reported again; check for incomplete or abandoned writes, stale block reports from DataNodes, and confirm that no pipeline corruption or node restart caused duplicate reporting; reconcile block state and clear orphaned replicas.",
+      "judge_score": 1.0,
+      "judge_rationale": "The diagnosis correctly identifies the orphaned block and duplicate addStoredBlock shown in the logs and suggests appropriate non\u2011destructive investigation steps.",
+      "checks": {
+        "ungrounded_paths": [],
+        "destructive_command": false,
+        "guardrail_flags": []
+      }
+    },
+    {
+      "block_id": "blk_404115376954829209",
+      "n_events": 2,
+      "sequence_score": 9.8808,
+      "kb_matches_used": 3,
+      "root_cause": "The log shows only the allocation of a block and the start of its transfer to a DataNode, but it does not contain any subsequent event indicating completion of the write or an error. This suggests that the block write may have been interrupted or truncated before finalization, potentially due to a network drop or client abort. The absence of a closing or error message is the anomalous element.",
+      "suggested_fix": "Verify the integrity of the block transfer by checking network stability between the client and the DataNode and ensuring that the client did not terminate unexpectedly. Review the NameNode and DataNode logs for any missing \"write complete\" or EOF/connection\u2011closed indications. Confirm whether the block was successfully replicated to a second replica; if not, trigger re\u2011replication or invalidate the orphaned block.",
+      "judge_score": 1.0,
+      "judge_rationale": "The diagnosis correctly spots the absent write\u2011completion event and offers a sensible network/integrity investigation.",
+      "checks": {
+        "ungrounded_paths": [],
+        "destructive_command": false,
+        "guardrail_flags": []
+      }
+    },
+    {
+      "block_id": "blk_2819740603479754270",
       "n_events": 30,
       "sequence_score": 8.3666,
       "kb_matches_used": 3,
-      "root_cause": "Pipeline failure or aborted write caused an orphan block that was later marked invalid; the log lacks a normal block-completion event, indicating the write was interrupted before the file was committed.",
-      "suggested_fix": "Investigate the DataNode and client logs around the timestamps of the warning entries for I/O or network errors, confirm whether the client aborted the write or the DataNode pipeline was torn down prematurely, and verify that the file was not mistakenly deleted or abandoned before commit. Ensure replication and block report processes are functioning correctly.",
+      "root_cause": "The DataNode reported a block that has no owning file; the NameNode marked it invalid and deleted it, indicating an orphaned block likely caused by a failed or aborted write or pipeline tear\u2011down that produced duplicate addStoredBlock events and served the block to a client before it could be properly finalized.",
+      "suggested_fix": "Investigate the write operation that generated the block for signs of abort or timeout, and check the DataNode/NameNode health and network reliability around that time. Verify that block reports are complete and that replication pipelines are correctly closed. If orphan blocks recur, review client write logic and cluster configuration to ensure blocks are only reported to the NameNode once the file is committed.",
       "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the pipeline/aborted write indicated by the warnings and invalid\u2011set entries and suggests appropriate non\u2011destructive investigation.",
+      "judge_rationale": "The diagnosis correctly identifies the orphaned block and missing file evidence and offers appropriate, non\u2011destructive investigative steps.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -83,59 +115,14 @@
       }
     },
     {
-      "block_id": "blk_711398692579493650",
-      "n_events": 42,
-      "sequence_score": 13.8046,
-      "kb_matches_used": 3,
-      "root_cause": "An exception occurred while the DataNode attempted to serve blk_711398692579493650, causing the block to be added to the invalid set and deleted. The log shows packet responder termination and an exception during serving, but lacks a normal completion event for the block pipeline, indicating an interrupted or incomplete transfer, possibly due to network or node instability.",
-      "suggested_fix": "Inspect the detailed DataNode logs around the exception to determine the exact error (e.g., timeout, disk I/O, or network drop). Verify that all nodes in the write pipeline are reachable and healthy, and confirm that blk_711398692579493650 has been replicated to another DataNode. If replication is below the desired level, trigger a re-replication of the block. Monitor network performance and DataNode health to prevent future interruptions.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the logged exception and missing completion as the cause and suggests appropriate, non\u2011destructive investigative and remediation steps.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-4200855316404582665",
-      "n_events": 41,
-      "sequence_score": 11.9947,
-      "kb_matches_used": 3,
-      "root_cause": "The log shows a block being received, replicated, and then marked as invalid and deleted after an exception is reported while serving the block. The absence of a successful replication completion event (e.g., a final block-added confirmation) suggests that the write pipeline was torn down prematurely, likely due to a network or node\u2011level failure at the receiving DataNode. This explains the invalidation and deletion of the block.",
-      "suggested_fix": "Check the network path and health of the DataNodes involved in the replication pipeline. Verify that the receiving node is online and has sufficient disk space. Review the DataNode logs for any I/O errors or timeouts around the time of the exception, and ensure the block replication pipeline is not interrupted prematurely.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the exception and block invalidation shown in the logs and proposes appropriate non\u2011destructive checks.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_233134314408087919",
-      "n_events": 2,
-      "sequence_score": 8.9792,
-      "kb_matches_used": 3,
-      "root_cause": "The log shows only the initiation of a block transfer from a client to the DataNode and the Namesystem allocating the block, but it does not contain any event that confirms the block was actually received, written, or replicated. The absence of a completion or success event suggests that the transfer sequence may have been truncated or that a subsequent expected event is missing. This incomplete sequence is a structural anomaly rather than an explicit error.",
-      "suggested_fix": "Verify that the DataNode process is running and that the network connection to the client remained stable throughout the transfer. Check the DataNode logs for any subsequent block\u2011completion messages or errors that might have occurred after the allocation. If a completion message is truly missing, investigate potential network drops or client crashes that could interrupt the transfer, and confirm that the block was replicated to another DataNode for redundancy.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the missing completion event and proposes appropriate non\u2011destructive checks.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-7623627073602241247",
+      "block_id": "blk_-7144572636070509322",
       "n_events": 4,
-      "sequence_score": 12.2627,
+      "sequence_score": 13.5276,
       "kb_matches_used": 3,
-      "root_cause": "The writeBlock operation failed because the DataNode could not read from the incoming stream, indicating that the client or upstream node stopped sending data prematurely, possibly due to a crash, timeout, or network interruption.",
-      "suggested_fix": "Verify the upstream DataNode or client for crashes or timeouts, review network stability between the nodes, ensure sufficient disk space, and trigger a re-replication of the affected block to restore consistency.",
+      "root_cause": "Block transfer to DataNode was interrupted mid\u2011write, producing a java.io.IOException: Could not read from stream; most likely caused by the client or upstream node stopping transmission or a network drop before the block finished.",
+      "suggested_fix": "Check if the task that was writing the block was killed or timed out; inspect the upstream node\u2019s logs for the same block ID to see if it stopped sending; verify network connectivity and the target DataNode\u2019s availability and disk space, and confirm that the block was re\u2011replicated or retransmitted.",
       "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the IOException from the log and suggests appropriate, non\u2011destructive investigative steps.",
+      "judge_rationale": "The diagnosis correctly identifies the IOException shown in the logs as the abnormal event and proposes appropriate, non\u2011destructive investigative steps.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -143,179 +130,14 @@
       }
     },
     {
-      "block_id": "blk_-4084272267623838857",
-      "n_events": 4,
-      "sequence_score": 12.2627,
+      "block_id": "blk_-1688765936563509015",
+      "n_events": 29,
+      "sequence_score": 7.3333,
       "kb_matches_used": 3,
-      "root_cause": "Incomplete block transfer, likely due to network interruption, client abort, or upstream node failure during the write of blk_-4084272267623838857.",
-      "suggested_fix": "Investigate the network path between the source and destination DataNodes, verify that the client or upstream node was not killed or timed out during the transfer, and confirm that the block was successfully replicated or re-replicated by examining the logs for the same block ID. If the block is missing, re\u2011initiate the write or re\u2011schedule the task.",
+      "root_cause": "The DataNode reported exceptions while serving blk_-1688765936563509015, causing the NameNode to mark the replica as invalid and delete it; likely a block corruption or I/O issue during replication.",
+      "suggested_fix": "Check the DataNode\u2019s disk I/O and network stability for the time of the block transfer; review the DataNode logs around the exception entries for stack traces; ensure the replica reaches the desired replication count and that no other DataNodes report similar failures.",
       "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the IOException in the logs as an incomplete block transfer and suggests appropriate, non\u2011destructive investigative steps.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-3094709651425760977",
-      "n_events": 20,
-      "sequence_score": 12.2155,
-      "kb_matches_used": 3,
-      "root_cause": "The NameNode received duplicate and orphaned addStoredBlock requests for block blk_-3094709651425760977, which were subsequently added to the invalid set and deleted. This indicates an incomplete or aborted write pipeline\u2014likely a transient network or DataNode failure caused the pipeline to tear down, prompting the DataNode to report the block prematurely. The missing expected event is a normal completion of the write pipeline (e.g., a non\u2011redundant addStoredBlock followed by a successful block report), which is not present in this sequence.",
-      "suggested_fix": "1. Verify the health and connectivity of all pipeline nodes (client, DataNodes, NameNode) during the time of the write. 2. Review client logs for aborted or killed write operations. 3. Check DataNode logs for any I/O errors or timeouts that could have caused the pipeline to close early. 4. Confirm that replication counts for the file are as expected and that no additional orphaned blocks exist. 5. If the issue recurs, consider tightening pipeline timeout settings and ensuring adequate network bandwidth.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis accurately pinpoints the duplicate addStoredBlock and orphaned block events present in the logs and suggests appropriate, non\u2011destructive investigative steps.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-5213825485386314473",
-      "n_events": 2,
-      "sequence_score": 8.9792,
-      "kb_matches_used": 3,
-      "root_cause": "The log shows a DataXceiver receiving a block and the NameNode allocating it, but there is no subsequent event indicating the block was successfully stored or reported back. This suggests a structural anomaly\u2014likely an incomplete or truncated block transfer where the completion event is missing.",
-      "suggested_fix": "Investigate the block transfer between the client and DataNode: verify network connectivity, firewall rules, and that the DataNode is accepting connections on the expected port. Monitor block report and addStoredBlock events to confirm if the block was received or needs re\u2011replication. Ensure no client aborts or crashes occurred during the transfer.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly spots the missing block\u2011completion event and offers a sensible, non\u2011destructive investigation/fix.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-6461163340371287150",
-      "n_events": 4,
-      "sequence_score": 12.2627,
-      "kb_matches_used": 3,
-      "root_cause": "The DataNode attempted to write block blk_-6461163340371287150 but received an IOException stating \"Could not read from stream\". The sequence shows the DataNode receiving the block from two sources before the FSNamesystem allocated the block, and it ends with an exception rather than a normal write\u2011complete event, indicating a truncated or aborted transfer. This is consistent with a network interruption or upstream node aborting the send mid\u2011block. Additionally, the expected event that would confirm successful write (e.g., a writeBlock success or block write complete log) is missing, which is a structural anomaly.",
-      "suggested_fix": "Investigate the network path and stability between the source DataNode(s) and this DataNode, and examine logs on the upstream node(s) for any signs of timeouts, crashes, or aborts during the same block transfer. Verify that the block has been replicated to the required number of replicas and that the block report on this DataNode reflects the block\u2019s state. If the block is missing or incomplete, trigger a re\u2011replication or a manual recovery of the file. Ensure that the DataNode\u2019s disk space and I/O performance are healthy, and check for any transient connectivity issues. Monitor the order of events in future logs to confirm that block allocation occurs before the DataNode begins to receive the block data.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the IOException and missing completion as the abnormal events and suggests appropriate non\u2011destructive investigations and remediation.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_5180799873853102151",
-      "n_events": 2,
-      "sequence_score": 8.9792,
-      "kb_matches_used": 3,
-      "root_cause": "The log records the DataNode receiving block blk_5180799873853102151 and the NameNode allocating it, but it does not include the expected subsequent block\u2011completion or checksum confirmation events. This omission suggests that the block transfer may have been incomplete or truncated, although no explicit error line appears.",
-      "suggested_fix": "Inspect the DataNode and client logs for a block\u2011completion or checksum message that should follow the receive event, verify that the block was fully written and replicated, and check network stability between the client and the DataNode during this period.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the missing block\u2011completion events as the abnormality and proposes appropriate, non\u2011destructive investigative steps.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-3220473967445819946",
-      "n_events": 4,
-      "sequence_score": 12.2627,
-      "kb_matches_used": 3,
-      "root_cause": "Partial block transfer interrupted, likely due to client abort or network drop causing the DataNode to throw java.io.IOException: Could not read from stream during writeBlock.",
-      "suggested_fix": "Verify that the source task was not killed or timed out, check the upstream node\u2019s logs for the same block, confirm network connectivity between the nodes, and ensure that the block has been replicated or re-replicated to maintain data integrity.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis accurately links the IOException in the logs to a partial block transfer and proposes sensible, non\u2011destructive investigative steps.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-3649272490970879793",
-      "n_events": 27,
-      "sequence_score": 4.6693,
-      "kb_matches_used": 3,
-      "root_cause": "The log shows a block being received, replicated, and then repeatedly deleted and marked as invalid, with PacketResponder instances terminating abruptly. This pattern is consistent with an early pipeline tear\u2011down or truncated transfer, where the block never fully propagated to a stable replica before being purged. No explicit error line is present; the expected completion of the block transfer pipeline is missing, leading to the block\u2019s invalidation.",
-      "suggested_fix": "Verify that the DataNode pipelines are stable and that network paths between nodes are reliable. Check the source and target DataNodes for disk space, I/O errors, or timeouts that could cause early termination of the pipeline. Ensure that the block is fully replicated before any delete operation occurs, and monitor for any network drops or node restarts during the transfer.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the premature PacketResponder termination and subsequent block invalidation as the abnormal events and offers a sensible, non\u2011destructive remediation plan.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-487066992150782377",
-      "n_events": 4,
-      "sequence_score": 12.2627,
-      "kb_matches_used": 3,
-      "root_cause": "The DataNode reported an IOException during writeBlock for blk_-487066992150782377, indicating that the stream ended prematurely. This is consistent with a client abort, a crashed peer, or a network drop that truncated the block transfer.",
-      "suggested_fix": "Verify network stability between the source and destination DataNodes, inspect the client or upstream node\u2019s logs for signs of termination or timeout, and confirm that the block has been replicated to a healthy replica. If the block was truncated, trigger a re-replication or restart the failed write task.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the IOException shown in the logs and suggests appropriate non\u2011destructive investigative steps.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-3771019382593267657",
-      "n_events": 20,
-      "sequence_score": 12.7402,
-      "kb_matches_used": 3,
-      "root_cause": "The NameNode received multiple addStoredBlock requests for the same block (blk_-3771019382593267657) and subsequently marked it for deletion, indicating that the block is orphaned\u2014i.e., it does not belong to any active file, likely due to a failed or aborted write operation.",
-      "suggested_fix": "Verify that the originating write pipeline terminated correctly, review DataNode and client logs for any failures during block creation, and confirm that no other file references the orphaned block. If the block is truly unused, allow the NameNode to invalidate it; otherwise, investigate why the block report was duplicated and ensure the replication pipeline remains stable.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis accurately matches the redundant addStoredBlock and deletion events in the logs and suggests appropriate, non\u2011destructive investigative steps.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_-2718289147625368293",
-      "n_events": 27,
-      "sequence_score": 5.6463,
-      "kb_matches_used": 3,
-      "root_cause": "The log shows repeated receiving of block blk_-2718289147625368293 from multiple sources, followed by multiple PacketResponder terminations and eventually the block being deleted and marked invalid. The absence of a successful completion event suggests the block transfer was incomplete or corrupted, leading the NameSystem to invalidate the block.",
-      "suggested_fix": "Investigate the network path and DataNode disk health during the transfer period. Verify that all pipeline nodes were reachable and that no I/O errors or timeouts occurred. Ensure the block was fully replicated before deletion, and review any pending replication or recovery processes.",
-      "judge_score": 1.0,
-      "judge_rationale": "Root cause correctly identifies incomplete block transfer and fix is appropriate",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_2407356029255239411",
-      "n_events": 27,
-      "sequence_score": 5.0382,
-      "kb_matches_used": 3,
-      "root_cause": "The log shows a block being written, replicated, then immediately deleted and marked as invalid on the same DataNode, with no explicit error or completion confirmation. This pattern suggests a failed or corrupted replication pipeline\u2014most likely the block was corrupted during transfer or the DataNode detected an I/O inconsistency and discarded it. The expected event that is missing is a normal replication\u2011completion or success confirmation (e.g., a \u2018Block replication finished\u2019 or similar acknowledgment).",
-      "suggested_fix": "Verify the health of the DataNode\u2019s storage and network interface: check for disk errors, available space, and any I/O exceptions in the logs. Inspect the replication pipeline configuration and ensure that the block is correctly acknowledged before it is removed. If corruption is detected, re\u2011replicate the block from a healthy replica and confirm the replication completes successfully.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis accurately pinpoints the unexpected block deletions/invalidSet markings as the abnormal event and recommends sensible health\u2011check and replication verification steps.",
-      "checks": {
-        "ungrounded_paths": [],
-        "destructive_command": false,
-        "guardrail_flags": []
-      }
-    },
-    {
-      "block_id": "blk_9161267399509284623",
-      "n_events": 20,
-      "sequence_score": 10.5237,
-      "kb_matches_used": 3,
-      "root_cause": "The DataNode received a block from multiple sources, but the packet responder was terminated prematurely and the block was marked invalid before it was fully written. A subsequent delete command was issued for a replica that the DataNode no longer had a record of, resulting in an error when attempting to delete the block file. This indicates a pipeline interruption and a mismatch between the NameNode\u2019s block map and the DataNode\u2019s block report.",
-      "suggested_fix": "Verify that the DataNode\u2019s block report is in sync with the NameNode\u2019s block map. Check the pipeline status for the block to ensure all pipeline nodes are healthy and the block reached its replication target. If duplicate delete commands are observed, investigate any recent DataNode restarts or client aborts that could have caused the replica to be prematurely invalidated. Trigger a full block report from the DataNode and review the NameNode\u2019s recent block allocation and deletion logs for inconsistencies.",
-      "judge_score": 1.0,
-      "judge_rationale": "The diagnosis correctly identifies the multiple receptions, premature responder termination, invalidation and deletion errors shown in the logs and proposes appropriate non\u2011destructive sync and pipeline checks.",
+      "judge_rationale": "The diagnosis correctly identifies the WARN exception events as the cause and proposes appropriate non\u2011destructive investigative fixes.",
       "checks": {
         "ungrounded_paths": [],
         "destructive_command": false,
@@ -325,36 +147,88 @@
   ],
   "errored_cases": [
     {
-      "block_id": "blk_-3174232733041654340",
-      "error": "BadRequestError: Error code: 400 - {'error': {'message': \"Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': 'max completion tokens reached before generating a valid doc"
+      "block_id": "blk_-656933000798684134",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199520, Requested 1278. Please try again in 5m44.736s. Need more tokens? Up"
     },
     {
-      "block_id": "blk_-5057408869195318440",
-      "error": "BadRequestError: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}"
+      "block_id": "blk_-4824699030744830846",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199340, Requested 2124. Please try again in 10m32.448s. Need more tokens? U"
     },
     {
-      "block_id": "blk_311230975369278533",
-      "error": "BadRequestError: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}"
+      "block_id": "blk_-6730152931449105524",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199160, Requested 1923. Please try again in 7m47.856s. Need more tokens? Up"
     },
     {
-      "block_id": "blk_7676871324168480817",
-      "error": "BadRequestError: Error code: 400 - {'error': {'message': \"Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': 'max completion tokens reached before generating a valid doc"
+      "block_id": "blk_-9103421193799119551",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199589, Requested 1158. Please try again in 5m22.704s. Need more tokens? Up"
     },
     {
-      "block_id": "blk_8030820320494169146",
-      "error": "BadRequestError: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}"
+      "block_id": "blk_8457680559975994708",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199408, Requested 1358. Please try again in 5m30.912s. Need more tokens? Up"
     },
     {
-      "block_id": "blk_2043246574008345667",
-      "error": "BadRequestError: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}"
+      "block_id": "blk_-746178492861284804",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199228, Requested 1399. Please try again in 4m30.864s. Need more tokens? Up"
     },
     {
-      "block_id": "blk_619688685715802202",
-      "error": "BadRequestError: Error code: 400 - {'error': {'message': \"Failed to validate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': ''}}"
+      "block_id": "blk_-9175463683870012043",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199526, Requested 1071. Please try again in 4m17.904s. Need more tokens? Up"
     },
     {
-      "block_id": "blk_-360216486646529124",
-      "error": "BadRequestError: Error code: 400 - {'error': {'message': \"Failed to generate JSON. Please adjust your prompt. See 'failed_generation' for more details.\", 'type': 'invalid_request_error', 'code': 'json_validate_failed', 'failed_generation': 'max completion tokens reached before generating a valid doc"
+      "block_id": "blk_8279277495935606463",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199346, Requested 1180. Please try again in 3m47.232s. Need more tokens? Up"
+    },
+    {
+      "block_id": "blk_5389935168459786995",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199791, Requested 1092. Please try again in 6m21.455999999s. Need more toke"
+    },
+    {
+      "block_id": "blk_6893696200423380966",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199610, Requested 1295. Please try again in 6m30.96s. Need more tokens? Upg"
+    },
+    {
+      "block_id": "blk_-2356531211325679524",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199430, Requested 597. Please try again in 11.664s. Need more tokens? Upgra"
+    },
+    {
+      "block_id": "blk_3889689008984678294",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199687, Requested 998. Please try again in 4m55.92s. Need more tokens? Upgr"
+    },
+    {
+      "block_id": "blk_2477683857062696782",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199491, Requested 671. Please try again in 1m9.984s. Need more tokens? Upgr"
+    },
+    {
+      "block_id": "blk_2010307199180977370",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199309, Requested 1537. Please try again in 6m5.472s. Need more tokens? Upg"
+    },
+    {
+      "block_id": "blk_5952372123504040166",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199615, Requested 951. Please try again in 4m4.512s. Need more tokens? Upgr"
+    },
+    {
+      "block_id": "blk_2709989980567383975",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199433, Requested 1739. Please try again in 8m26.304s. Need more tokens? Up"
+    },
+    {
+      "block_id": "blk_7077011914927121929",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199251, Requested 1461. Please try again in 5m7.584s. Need more tokens? Upg"
+    },
+    {
+      "block_id": "blk_8896190382245751951",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199069, Requested 1310. Please try again in 2m43.728s. Need more tokens? Up"
+    },
+    {
+      "block_id": "blk_-4129427822625471809",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198886, Requested 1719. Please try again in 4m21.36s. Need more tokens? Upg"
+    },
+    {
+      "block_id": "blk_-7481253531318379507",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199702, Requested 1603. Please try again in 9m23.76s. Need more tokens? Upg"
+    },
+    {
+      "block_id": "blk_4596525681454440771",
+      "error": "RateLimitError: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01kczn2gxced082nbmdxd89dwe` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199521, Requested 1320. Please try again in 6m3.312s. Need more tokens? Upg"
     }
   ]
 }

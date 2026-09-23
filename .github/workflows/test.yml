@@ -26,6 +26,10 @@ jobs:
       - name: Install test dependencies
         run: |
           python -m pip install --upgrade pip
+          # CPU-only torch first — the default PyPI wheel pulls in CUDA/triton,
+          # which segfaults on import on a driver-less GitHub-hosted runner
+          # (torch.optim.Adam's __init__ now lazily imports torch._dynamo -> triton).
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install -r requirements-dev.txt
 
       # Each service's tests run in a SEPARATE pytest invocation. All three
