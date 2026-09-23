@@ -1,5 +1,7 @@
 # LogSage
 
+[![Build, Push, and Integration Test](https://github.com/Tazwar89/LogSage/actions/workflows/build-push-test.yml/badge.svg)](https://github.com/Tazwar89/LogSage/actions/workflows/build-push-test.yml)
+
 An LLM-powered log analysis system that ingests unstructured system logs, mines recurring event templates, detects anomalies with two complementary detectors (a per-line embedding-distance detector and a DeepLog-style LSTM that scores per-block event sequences), and generates root-cause diagnoses and suggested fixes using a multi-step agentic RAG pipeline.
 
 Built as three independently deployable microservices, coordinated via Kafka and a shared Redis store, and tested against the [Loghub HDFS](https://github.com/logpai/loghub) dataset.
@@ -70,6 +72,8 @@ Anomaly detection only works if new events are scored against a **fixed, stable 
 
 Loghub's HDFS labels are per block, and a block is anomalous because of its event sequence (a missing confirmation, a retry, truncation), not because any single line looks unusual. The per-line embedding detector scored 0% precision and 0% recall on a held-out HDFS_2k split (68 anomalous, 577 normal blocks), so it is kept as a cheap first filter but is not the primary detector for HDFS.
 
+A second line-level comparison (eval/compare_detectors.py, MiniLM embeddings; k-NN vs a TensorFlow autoencoder; results in eval/detector_comparison.json) also failed: each recalled 1 of 14 anomalies at ~5% FPR.
+
 The sequence detector (logsage_common.sequence_anomaly.DeepLogDetector) is a PyTorch LSTM trained on normal blocks only that predicts the next Drain3 template ID; a block's score is its worst next-event surprisal. The threshold is calibrated on held-out normal blocks (target FPR 0.5%), so no anomaly labels are used for tuning.
 
 Held-out results on Loghub HDFS_v1 (575,061 blocks, 45 templates; split 446,578 train / 55,822 val / 55,823 normal test + all 16,838 anomalous blocks as test; seed 42):
@@ -84,7 +88,7 @@ Trained with scripts/train_sequence_model.py; artifacts live in models/sequence/
 
 #### Evaluation
 
-- `eval/run_sequence_eval.py` — samples real labeled HDFS_v1 blocks, runs them through the sequence detector and the agentic pipeline, and has a different judge model grade each diagnosis against the block's own log lines (reference-free, because Loghub has no root-cause labels). Also reports ungrounded-path and destructive-command rates. Results: `eval/sequence_judge_results.json`.
+- `eval/run_sequence_eval.py` — samples real labeled HDFS_v1 blocks, runs them through the sequence detector and the agentic pipeline, and has a different judge model grade each diagnosis against the block's own log lines (reference-free, because Loghub has no root-cause labels). Also reports ungrounded-path and destructive-command rates. Results (judge openai/gpt-oss-120b, generator openai/gpt-oss-20b; seeds 7 and 13, 30 anomalous + 30 normal blocks each): 55/57 diagnoses passed (96.5%, Wilson 95% CI 88–99%), 0% ungrounded paths, 0% destructive commands; 91.7% end-to-end counting 3 detector misses. Reference-free judge from the same model family as the generator, so treat as a grounded-diagnosis rate, not accuracy. Per-seed files: eval/sequence_judge_results_seed7.json, _seed13.json.
 
 - `eval/run_eval.py` — legacy per-line harness over a 13-case hand-written golden set (mostly synthetic or near-duplicate lines, self-judged). Kept as a wiring check; its committed result (4/13) reflects the per-line detector missing most cases, not a claim about diagnosis quality.
 
@@ -139,6 +143,7 @@ Both services also serve interactive Swagger docs at `/docs`.
 
 - **Python 3.11+**
 - **FastAPI** — async REST APIs for ingestion_service and analysis_service
+- **PyTorch** - DeepLog-style long short-term memory (LSTM)
 - **Drain3** — log template mining
 - **sentence-transformers** (`all-MiniLM-L6-v2`) — local, free embedding model
 - **Qdrant** (`qdrant-client`) — vector similarity search, run as its own server (self-hosted on Fly.io in production, via Docker Compose locally); replaced an earlier FAISS + shared-volume approach
@@ -146,6 +151,8 @@ Both services also serve interactive Swagger docs at `/docs`.
 - **Redis** (self-hosted locally / Upstash in production) — persistent store for parsed log entries, replacing an earlier in-memory dict
 - **LangGraph** — 3-node agentic diagnostic pipeline (triage → research → report)
 - **Pandas / scikit-learn** — `/stats` analytics and an `IsolationForest`-based secondary anomaly detector, offered alongside the Qdrant distance-threshold approach
+- **TensorFlow** - line-level autoencoder baseline
+- **Hugging Face Hub** - embedding models via hf_hub, HF_TOKEN
 - **Groq API** (OpenAI-SDK-compatible) — LLM inference, model configurable via the `LLM_MODEL` environment variable (default `openai/gpt-oss-20b`); any OpenAI-SDK-compatible provider works by setting `LLM_BASE_URL`/`LLM_MODEL`
 - **Docker Compose** — local multi-container orchestration
 - **Kubernetes manifests** (`k8s/`) — Deployments, Services, and a PersistentVolumeClaim for Qdrant's storage, mirroring the Compose topology for cluster deployment; maintained for portfolio/reference purposes rather than as an actively deployed target
@@ -181,7 +188,7 @@ docker compose up --build
 
 Re-run the first command only when `libs/logsage_common` changes. For everyday iteration, `docker compose up --build` alone is enough — avoid `--no-cache`/`--pull` unless you specifically need to discard Docker's layer cache, since they force every layer (including the slow `sentence-transformers`/torch install) to rebuild from scratch on all three services independently.
 
-This starts six containers: `zookeeper`, `kafka`, `redis`, `ingestion_service`, `analysis_service`, `consumer_service`.
+This starts seven containers: `qdrant`, `zookeeper`, `kafka`, `redis`, `ingestion_service`, `analysis_service`, `consumer_service`.
 
 ### Usage flow
 
@@ -211,9 +218,10 @@ pytest tests/logsage_common -v
 pytest tests/ingestion_service -v
 pytest tests/analysis_service -v
 pytest tests/consumer_service -v
+pytest eval -v
 ```
 
-This is exactly how CI runs it (`.github/workflows/test.yml`) — four separate steps, not one.
+This is exactly how CI runs it (`.github/workflows/test.yml`) — five separate steps.
 
 The suite covers:
 - **`tests/logsage_common/`** — Qdrant-backed vector store build/query behavior (mocked client, no real Qdrant server needed), and Redis-backed log storage (via `fakeredis`, no real Redis server needed)
@@ -222,6 +230,8 @@ The suite covers:
 - **`tests/consumer_service/`** — Kafka consumer message handling (mocked)
 
 All external dependencies (embedding model, LLM API, Kafka broker, Redis server) are mocked, so the full suite runs offline in well under a second.
+
+On CPU-only machines/CI: pip install torch --index-url https://download.pytorch.org/whl/cpu before requirements-dev.txt.
 
 ## Kubernetes deployment
 

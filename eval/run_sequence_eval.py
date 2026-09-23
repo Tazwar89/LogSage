@@ -19,7 +19,6 @@ Needs the FULL HDFS_v1 HDFS.log (the 2k sample has ~1 line per block, so no sequ
 a reachable Qdrant (QDRANT_URL), GROQ_API_KEY and HF_TOKEN.
 
 Usage (repo root):
-    JUDGE_MODEL=llama-3.3-70b-versatile \
     python -m eval.run_sequence_eval --log ~/Desktop/HDFS_v1/HDFS.log \
         --labels eval/anomaly_label.csv --n-anomalous 60 --n-normal 60
 
@@ -50,7 +49,7 @@ from logsage_common.sequence_parsing import BLOCK_ID_RE
 
 from eval.precision_recall import load_ground_truth
 
-RESULTS_PATH = Path(__file__).parent / "sequence_judge_results.json"
+RESULTS_DIR = Path(__file__).parent
 DEFAULT_JUDGE = "openai/gpt-oss-120b"
 PASS_THRESHOLD = 0.7
 
@@ -299,7 +298,7 @@ def main() -> None:
         "cases": cases,
         "errored_cases": errors,
     })
-    RESULTS_PATH.write_text(json.dumps(summary, indent=2))
+    (RESULTS_DIR / f"sequence_judge_results_seed{args.seed}.json").write_text(json.dumps(summary, indent=2))
     print(json.dumps({k: v for k, v in summary.items() if k != "cases"}, indent=2))
 
 

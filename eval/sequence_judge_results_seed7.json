@@ -1,0 +1,25 @@
+{
+    "seed": 7,
+    "judge_model": "openai/gpt-oss-120b",
+    "generator_model": "openai/gpt-oss-20b",
+    "blocks_sampled": 60,
+    "blocks_not_found_in_log": 0,
+    "detector_on_sample": {
+        "tp": 28,
+        "fn": 2,
+        "fp": 0,
+        "normal_scored": 30
+    },
+    "diagnosed_cases": 28,
+    "errored_cases_count": 0,
+    "error_rate_of_tp": 0.0,
+    "judge_pass_rate": 0.9643,
+    "judge_pass_rate_95ci": [0.8229, 0.9937],
+    "mean_judge_score": 0.9821,
+    "end_to_end_rate_incl_missed": 0.9,
+    "ungrounded_path_rate": 0.0,
+    "destructive_command_rate": 0.0,
+    "cases_with_kb_match": 28,
+    "errored_cases": [],
+    "note": "Summary copied from terminal output; per-case detail was not retained (overwritten by the seed-13 run)."
+}
