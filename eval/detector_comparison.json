@@ -1,0 +1,27 @@
+{
+  "knn": {
+    "precision": 0.05,
+    "recall": 0.07142857142857142,
+    "f1": 0.058823529411764705,
+    "false_positive_rate": 0.0475,
+    "tp": 1,
+    "fp": 19,
+    "fn": 13,
+    "tn": 381
+  },
+  "autoencoder": {
+    "precision": 0.045454545454545456,
+    "recall": 0.07142857142857142,
+    "f1": 0.05555555555555555,
+    "false_positive_rate": 0.0525,
+    "tp": 1,
+    "fp": 21,
+    "fn": 13,
+    "tn": 379
+  },
+  "autoencoder_threshold": 6.278374348767102e-05,
+  "knn_threshold": 0.13365003541111944,
+  "n_train": 1600,
+  "n_normal_holdout": 400,
+  "n_anomalous": 14
+}
