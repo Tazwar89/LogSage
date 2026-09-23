@@ -1,8 +1,14 @@
-# LLM-as-Judge Eval Harness
+# Evaluation
 
-Measures diagnostic accuracy of `analysis_service`'s LangGraph pipeline
-(`agentic_pipeline.run_diagnostic_pipeline`) against a small hand-labeled
-golden dataset, using a second LLM call as the judge.
+Three separate evaluations live here. Quote them separately.
+
+| What | Script | Canonical result |
+|---|---|---|
+| Anomaly detector (DeepLog-style LSTM), held-out blocks | trained by `scripts/train_sequence_model.py` | `models/sequence/meta.json`: 97.1% recall, 0.45% FPR |
+| Diagnosis quality (reference-free LLM judge on real HDFS blocks) | `run_sequence_eval.py` | `sequence_judge_results_seed7.json`, `_seed13.json`: 55/57 pass (96.5%, 95% CI 88–99%) |
+| Line-level detector baselines (k-NN vs TensorFlow autoencoder) | `compare_detectors.py` | `detector_comparison.json`: ~7% recall at ~5% FPR (negative result) |
+
+`run_eval.py` (below) is a legacy per-line harness kept as a wiring check.
 
 ## Files
 
@@ -31,6 +37,9 @@ golden dataset, using a second LLM call as the judge.
   only releases via a Zenodo request (see the script's docstring) — it is
   **not** available for the 2k-line sample used everywhere else in this
   repo, so this is a separate, occasional run, not part of `run_eval.py`.
+- `run_sequence_eval.py` — samples labeled HDFS_v1 blocks with a fixed seed, runs the sequence detector and agentic pipeline, and has a different model grade each diagnosis against the block's own log lines (reference-free). Also reports ungrounded-path and destructive-command rates. Judge and generator must differ (`JUDGE_MODEL` vs `LLM_MODEL`). Writes `sequence_judge_results_seed<N>.json`. Run one seed per day on Groq's free tier (daily token quota). Read it as a judge-rated grounded-diagnosis rate, not accuracy: the judge is from the same model family as the generator.
+- `compare_detectors.py` — k-NN vs TensorFlow autoencoder on MiniLM line embeddings (HDFS_2k). Both recalled 1 of 14 anomalies at ~5% FPR, which is why detection is done at block-sequence level.
+- `sequence_eval.py` — DeepLog vs PCA comparison on block sequences (confirm this one-liner against the script's docstring); produced the JSON files in `archive/`.
 
 ## Running
 
@@ -69,17 +78,7 @@ Prints a per-case table for positive cases (score/verdict/rationale) and a
 second table for negative cases (flagged or not), and writes full detail to
 `eval_results.json`:
 
-```
-CASE                        SCORE   VERDICT RATIONALE
-oom_fsnamesystem            1.0     pass    Correctly identifies heap exhaustion and the right fix.
-...
-13 positive cases | accuracy=92.3% (threshold=0.7) | mean_score=0.90
-
-CASE                               FLAGGED_ANOMALOUS
-hdfs2k_normal_addstoredblock       False
-...
-10 negative cases | false_positive_rate=10.0%
-```
+The committed `eval_results.json` is the legacy 13-case result (4/13 pass), reflecting the per-line detector missing most cases, not diagnosis quality.
 
 `accuracy`/`mean_score` are computed over positive cases only.
 `false_positive_rate` is computed over negative cases only — quote both,
@@ -109,3 +108,7 @@ since it keeps the eval set representative of what the pipeline actually
 has to handle. Keep tagging each case's `source` (`synthetic` vs
 `hdfs_2k`/production) so it stays clear which numbers are backed by real
 traffic.
+
+## Archive
+
+`archive/` holds earlier sequence-detector runs (different splits from the final model: 39-template subset run, 223K-normal-test full run, FPR sweep, PCA baseline). They are kept for reference only and disagree with `models/sequence/meta.json` because of the different splits. In the subset run, PCA had 56.6% recall at 0.08% FPR vs DeepLog 96.8% at 1.12% FPR; the operating points are not matched, so it is not a like-for-like win.
