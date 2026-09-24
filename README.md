@@ -49,6 +49,8 @@ Manually reading through thousands of system log lines to find the handful that 
    └──────────────────────────────────────────────────────────────────┘
 ```
 
+Note: The diagram shows the per-line path. The primary HDFS detector is the block-level LSTM behind POST /upload/logs/sequence (see "two detectors" below).
+
 ### Why three application services, not one
 
 Each service owns a distinct responsibility and can be deployed, scaled, and reasoned about independently:
@@ -79,6 +81,7 @@ The sequence detector (logsage_common.sequence_anomaly.DeepLogDetector) is a PyT
 Held-out results on Loghub HDFS_v1 (575,061 blocks, 45 templates; split 446,578 train / 55,822 val / 55,823 normal test + all 16,838 anomalous blocks as test; seed 42):
 
 | Metric | Value |
+| --- | --- |
 | Recall | 97.1% (16,346 / 16,838) |
 | False-positive rate | 0.45% (253 / 55,823) |
 | Precision on this test set | 98.5% (test set is 23% anomalous) |
@@ -143,7 +146,7 @@ Both services also serve interactive Swagger docs at `/docs`.
 
 - **Python 3.11+**
 - **FastAPI** — async REST APIs for ingestion_service and analysis_service
-- **PyTorch** - DeepLog-style long short-term memory (LSTM)
+- **PyTorch** — DeepLog-style long short-term memory (LSTM)
 - **Drain3** — log template mining
 - **sentence-transformers** (`all-MiniLM-L6-v2`) — local, free embedding model
 - **Qdrant** (`qdrant-client`) — vector similarity search, run as its own server (self-hosted on Fly.io in production, via Docker Compose locally); replaced an earlier FAISS + shared-volume approach
@@ -151,14 +154,14 @@ Both services also serve interactive Swagger docs at `/docs`.
 - **Redis** (self-hosted locally / Upstash in production) — persistent store for parsed log entries, replacing an earlier in-memory dict
 - **LangGraph** — 3-node agentic diagnostic pipeline (triage → research → report)
 - **Pandas / scikit-learn** — `/stats` analytics and an `IsolationForest`-based secondary anomaly detector, offered alongside the Qdrant distance-threshold approach
-- **TensorFlow** - line-level autoencoder baseline
+- **TensorFlow** — line-level autoencoder baseline
 - **Hugging Face Hub** - embedding models via hf_hub, HF_TOKEN
 - **Groq API** (OpenAI-SDK-compatible) — LLM inference, model configurable via the `LLM_MODEL` environment variable (default `openai/gpt-oss-20b`); any OpenAI-SDK-compatible provider works by setting `LLM_BASE_URL`/`LLM_MODEL`
 - **Docker Compose** — local multi-container orchestration
 - **Kubernetes manifests** (`k8s/`) — Deployments, Services, and a PersistentVolumeClaim for Qdrant's storage, mirroring the Compose topology for cluster deployment; maintained for portfolio/reference purposes rather than as an actively deployed target
 - **Fly.io** — production deployment target (`logsage-ingestion`, `logsage-consumer`, `logsage-analysis`, `logsage-qdrant`)
 - **GitHub Actions** — CI running the full test suite on every push, publishing images to GHCR
-- **Loghub HDFS_2k** — test dataset
+- **Loghub HDFS_v1** (575K blocks) for the sequence detector and evals; **HDFS_2k** for the per-line detector and demos.
 
 ## Setup
 
@@ -171,8 +174,24 @@ Both services also serve interactive Swagger docs at `/docs`.
 Copy `.env.example` to `.env` in the repo root and fill in your key:
 
 ```
-GROQ_API_KEY=your_key_here
+GROQ_API_KEY=your_groq_api_key_here
+LLM_MODEL=openai/gpt-oss-20b
+LLM_BASE_URL=https://api.groq.com/openai/v1
+JUDGE_MODEL=llama-3.3-70b-versatile
 MOCK_LLM=false
+
+QDRANT_URL=http://localhost:6333
+
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=your_redis_password_here
+REDIS_TLS=false
+
+KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+KAFKA_SASL_USERNAME=your_kafka_username_here
+KAFKA_SASL_PASSWORD=your_kafka_password_here
+
+HF_TOKEN=your_huggingface_token_here
 ```
 
 `.env` is read automatically by Docker Compose and is already covered by `.gitignore` — never commit it. Setting `MOCK_LLM=true` bypasses the real LLM call and returns a canned response, useful for testing the full request/response flow without spending API credits.
@@ -209,7 +228,7 @@ curl http://localhost:8002/stats
 
 ## Testing
 
-Each service defines a top-level package literally named `app`, so importing more than one service's tests in the same Python process causes one to silently shadow the other. Tests are therefore split into per-service folders and **must be run as separate `pytest` invocations**, never combined into a single `pytest tests/` call:
+Each service defines a top-level package literally named `app`, so importing more than one service's tests in the same Python process causes one to silently shadow the other. Tests are therefore split into per-service folders and are run as separate pytest invocations (as CI does) to keep the per-service app packages isolated.
 
 ```bash
 pip install -r requirements-dev.txt
@@ -229,7 +248,7 @@ The suite covers:
 - **`tests/analysis_service/`** — anomaly threshold boundary behavior, the full 3-node LangGraph pipeline (LLM calls mocked), and Pandas/scikit-learn analytics
 - **`tests/consumer_service/`** — Kafka consumer message handling (mocked)
 
-All external dependencies (embedding model, LLM API, Kafka broker, Redis server) are mocked, so the full suite runs offline in well under a second.
+All external services (embedding API calls, LLM, Kafka, Redis) are mocked, so the suite runs without any infrastructure in under a minute (eval tests load the embedding model, ~40 s).
 
 On CPU-only machines/CI: pip install torch --index-url https://download.pytorch.org/whl/cpu before requirements-dev.txt.
 
