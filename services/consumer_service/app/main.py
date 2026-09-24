@@ -47,6 +47,7 @@ def connect_with_retry(max_retries: int = 10, initial_delay: float = 2.0) -> Kaf
                 value_deserializer=_safe_json_deserializer,
                 auto_offset_reset="earliest",
                 group_id=CONSUMER_GROUP_ID,
+                enable_auto_commit=False,
                 **cast(dict[str, Any], KAFKA_SECURITY_KWARGS),
             )
             logger.info(f"Connected to Kafka at {KAFKA_BOOTSTRAP_SERVERS} on attempt {attempt}")
@@ -85,12 +86,14 @@ def run_consumer():
             or "entry" not in payload
         ):
             logger.warning(f"Skipping malformed message at offset {message.offset}")
+            consumer.commit()
             continue
 
         trace_id = payload["trace_id"]
         entry = payload["entry"]
         log_store.save(trace_id, entry)
         logger.info(f"Stored {trace_id}")
+        consumer.commit()
 
 
 if __name__ == "__main__":
