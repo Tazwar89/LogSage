@@ -111,6 +111,19 @@ Note: Qdrant uses true L2 distance, while the earlier FAISS setup used squared L
 
 State accumulates across nodes via a typed dict, matching LangGraph's standard pattern — this is a real loop, not a single prompt relabeled as an "agent."
 
+## Example diagnosis
+
+Output of the agentic pipeline for one anomalous HDFS block (`blk_5229240184982419822`, 22 events, sequence score 9.39), taken from `eval/sequence_judge_results_seed13.json`. Fields are `root_cause` and `suggested_fix`.
+
+```json
+{
+  "root_cause": "The log shows a block that was allocated, received by DataNodes, and added to the block map, yet the NameNode reports it does not belong to any file and deletes it. This pattern indicates the block was orphaned, most likely because the job that created it failed or was killed before the file metadata was updated. The expected event—finalizing the file and associating the block with that file—is missing from the sequence.",
+  "suggested_fix": "Investigate the originating job for failures or premature termination that could prevent the file from being finalized. Examine the task logs around the allocation timestamp for errors or abort signals. Verify that block reports are not being duplicated excessively (which can happen after DataNode restarts) and that replication pipelines complete normally."
+}
+```
+
+The judge scored this 1.0: it identifies the orphaned block and proposes only non-destructive checks.
+
 ## Services
 
 | Service | Port | Responsibilities | Depends on |
@@ -177,7 +190,7 @@ Copy `.env.example` to `.env` in the repo root and fill in your key:
 GROQ_API_KEY=your_groq_api_key_here
 LLM_MODEL=openai/gpt-oss-20b
 LLM_BASE_URL=https://api.groq.com/openai/v1
-JUDGE_MODEL=llama-3.3-70b-versatile
+JUDGE_MODEL=openai/gpt-oss-120b
 MOCK_LLM=false
 
 QDRANT_URL=http://localhost:6333

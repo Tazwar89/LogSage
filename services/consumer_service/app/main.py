@@ -78,7 +78,12 @@ def run_consumer():
     for message in consumer:
         payload = message.value
 
-        if not isinstance(payload, dict) or "__malformed__" in payload or "trace_id" not in payload:
+        if (
+            not isinstance(payload, dict)
+            or "__malformed__" in payload
+            or "trace_id" not in payload
+            or "entry" not in payload
+        ):
             logger.warning(f"Skipping malformed message at offset {message.offset}")
             continue
 
