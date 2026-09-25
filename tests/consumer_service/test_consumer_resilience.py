@@ -71,7 +71,9 @@ class TestMalformedMessages:
         with patch(f"{MODULE}.KafkaConsumer") as mock_consumer_cls, \
              patch(f"{MODULE}.LogStore") as mock_log_store_cls:
 
-            mock_consumer_cls.return_value = iter([_message(bad_value, offset=1), good])
+            mock_consumer = MagicMock()
+            mock_consumer.__iter__.return_value = iter([_message(bad_value, offset=1), good])
+            mock_consumer_cls.return_value = mock_consumer
             mock_log_store = MagicMock()
             mock_log_store_cls.return_value = mock_log_store
 
