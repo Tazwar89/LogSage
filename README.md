@@ -289,6 +289,7 @@ Two things worth knowing before trying this on a local cluster:
 - Splits are random by block, not temporal.
 - Anomaly threshold is `sqrt(0.6) ≈ 0.775`, tuned for Qdrant's true L2 distance against the HDFS_2k dataset, and would need re-tuning for other log formats or distance metrics.
 - There's a small delay between `/upload/logs` and a trace_id becoming queryable via `/analyze`, since ingestion happens asynchronously through Kafka rather than synchronously in the request/response cycle.
+- Per-case diagnosis detail for the seed-7 judge run was not retained; only a terminal-output summary survives (`eval/sequence_judge_results_seed7.json` notes this in its own `note` field). Seed-13 has full per-case detail. The pooled 55/57 result is unaffected, but per-case forensics for seed 7 aren't available.
 
 ## Possible extensions
 
