@@ -8,7 +8,7 @@ import os
 
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 LOG_INGESTION_TOPIC = "logsage.logs.raw"
-CONSUMER_GROUP_ID = "logsage-analysis-service"
+CONSUMER_GROUP_ID = "logsage-consumer-service"
 
 KAFKA_SASL_USERNAME = os.getenv("KAFKA_SASL_USERNAME")
 KAFKA_SASL_PASSWORD = os.getenv("KAFKA_SASL_PASSWORD")

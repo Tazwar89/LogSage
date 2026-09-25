@@ -4,6 +4,9 @@ primary_region = "yyz"
 [build]
   dockerfile = "Dockerfile"
 
+[deploy]
+  strategy = "immediate"
+
 [[vm]]
   memory = "512mb"
   cpu_kind = "shared"
