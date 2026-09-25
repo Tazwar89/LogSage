@@ -1,1 +1,1 @@
-kafka-python-ng
+kafka-python>=2.3.2

@@ -255,8 +255,9 @@ def main() -> None:
 
     cases, errors = [], []
 
-    from openai import OpenAIError
     import time as _time
+
+    from openai import OpenAIError
 
     for b in tp:
         try:

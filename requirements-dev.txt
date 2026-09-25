@@ -14,7 +14,7 @@ huggingface_hub
 pydantic
 fastapi
 numpy
-kafka-python
+kafka-python>=2.3.2
 langgraph
 langchain-core
 openai
