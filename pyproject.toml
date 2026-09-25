@@ -1,4 +1,9 @@
 [tool.pytest.ini_options]
+filterwarnings = [
+    "ignore:The anyio.abc.BlockingPortal alias is deprecated:DeprecationWarning:starlette.testclient",
+    "ignore:read_text is deprecated:DeprecationWarning:kafka.protocol.schemas",
+    "ignore:open_text is deprecated:DeprecationWarning",
+]
 pythonpath = [
     "."
 ]
