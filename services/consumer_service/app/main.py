@@ -91,7 +91,14 @@ def run_consumer():
 
         trace_id = payload["trace_id"]
         entry = payload["entry"]
-        log_store.save(trace_id, entry)
+
+        try:
+            log_store.save(trace_id, entry)
+
+        except Exception:
+            logger.error(f"Failed to store {trace_id} at offset {message.offset}, not committing")
+            raise  # fail-fast: let the process crash and restart without committing this offset
+
         logger.info(f"Stored {trace_id}")
         consumer.commit()
 
