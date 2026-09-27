@@ -1,11 +1,20 @@
 import json
 import os
+import time
 
 # Qdrant collections use EUCLID distance on normalized embeddings (range 0-2; lower = closer).
 # Entries farther than this are dropped so unrelated KB items never reach the LLM.
 # Calibrate against a few known-relevant and known-irrelevant pairs before trusting the default.
 RAG_MAX_DISTANCE = float(os.getenv("RAG_MAX_DISTANCE", "1.0"))
 RAG_MAX_QUERY_LINES = int(os.getenv("RAG_MAX_QUERY_LINES", "40"))
+
+# Set RAG_LOG_ALL_DISTANCES=true to append every candidate (query line, KB
+# template, distance) to RAG_DISTANCE_LOG_PATH as JSONL, BEFORE the
+# max_distance filter is applied -- rejected matches normally vanish
+# silently, so this is the only way to see what the cutoff is excluding.
+# Purely additive: never changes retrieve_context's return value.
+RAG_LOG_ALL_DISTANCES = os.getenv("RAG_LOG_ALL_DISTANCES", "false").lower() == "true"
+RAG_DISTANCE_LOG_PATH = os.getenv("RAG_DISTANCE_LOG_PATH", "eval/rag_distances.jsonl")
 
 
 def load_knowledge_base(path="data/knowledge_base.json"):
@@ -24,23 +33,58 @@ def build_kb_index(vector_store, kb_entries):
     return {i: entry for i, entry in enumerate(kb_entries)}
 
 
-def retrieve_context(anomalous_text, kb_vector_store, kb_lookup, k=3, max_distance=None):
+def _log_candidates(case_id, query_line, results, kb_lookup):
+    """Appends one JSONL row per (query_line, kb_candidate) pair, unfiltered."""
+    try:
+        with open(RAG_DISTANCE_LOG_PATH, "a") as f:
+            for r in results:
+                tid = r["template_id"]
+                row = {
+                    "ts": time.time(),
+                    "case_id": case_id,
+                    "query_line": query_line,
+                    "template_id": tid,
+                    "kb_issue": kb_lookup.get(tid, {}).get("issue"),
+                    "distance": r["distance"],
+                }
+                f.write(json.dumps(row) + "\n")
+
+    except OSError:
+        pass  # logging is best-effort; never break retrieval over a bad path/permissions
+
+
+def retrieve_context(anomalous_text, kb_vector_store, kb_lookup, k=3, max_distance=None, case_id=None):
     """
     Queries the KB once per line (a block's context is many lines; embedding the whole
     blob dilutes the one anomalous line), keeps each KB entry's best distance, drops
     anything beyond max_distance, and returns up to k entries, closest first.
     Returns [] when nothing is close enough.
+
+    case_id: optional identifier (e.g. block_id) attached to logged rows when
+    RAG_LOG_ALL_DISTANCES=true, so distance samples can be traced back to a case.
     """
     if max_distance is None:
         max_distance = RAG_MAX_DISTANCE
+
+    if case_id is None:
+        # research_node() calls this with no case_id (its signature is fixed by
+        # LangGraph's node contract). Eval scripts that want traceable logs set
+        # this env var per-case instead of threading case_id through the graph.
+        case_id = os.getenv("RAG_CURRENT_CASE_ID")
 
     lines = [l.strip() for l in anomalous_text.splitlines() if l.strip() and not l.startswith("...")]
     queries = lines[:RAG_MAX_QUERY_LINES] or [anomalous_text]
 
     best: dict = {}
     for q in queries:
-        for r in kb_vector_store.query(q, k=k):
+        results = kb_vector_store.query(q, k=k)
+
+        if RAG_LOG_ALL_DISTANCES:
+            _log_candidates(case_id, q, results, kb_lookup)
+
+        for r in results:
             tid, dist = r["template_id"], r["distance"]
+
             if tid not in best or dist < best[tid]:
                 best[tid] = dist
 

@@ -263,6 +263,7 @@ def main() -> None:
         try:
             _time.sleep(2)  # stay under Groq free-tier RPM across triage+report+judge calls
             entry = build_block_entry(parsed_logs, results[b])
+            os.environ["RAG_CURRENT_CASE_ID"] = b
             out = run_diagnostic_pipeline(entry["message"], kb_store, kb_lookup)
             analysis = out["analysis"]
             verdict = judge(entry["message"], analysis, judge_model)
