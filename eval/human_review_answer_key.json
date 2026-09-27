@@ -1,0 +1,92 @@
+{
+  "seed13:blk_-4129427822625471809": {
+    "judge_score": 1.0,
+    "judge_verdict": "pass",
+    "judge_rationale": "The diagnosis correctly identifies the block\u2019s invalidation and deletion shown in the logs and proposes appropriate non\u2011destructive investigative steps."
+  },
+  "seed13:blk_3889689008984678294": {
+    "judge_score": 0.5,
+    "judge_verdict": "fail",
+    "judge_rationale": "The diagnosis correctly notes the absence of a completion event (an inferred abnormality) and suggests reasonable investigative steps, but the missing completion is not explicitly present in the log lines."
+  },
+  "seed13:blk_-9103421193799119551": {
+    "judge_score": 1.0,
+    "judge_verdict": "pass",
+    "judge_rationale": "The diagnosis correctly identifies the missing completion event as the abnormality and suggests appropriate, non\u2011destructive verification and health checks."
+  },
+  "seed13:blk_8896190382245751951": {
+    "judge_score": 1.0,
+    "judge_verdict": "pass",
+    "judge_rationale": "The diagnosis correctly identifies the duplicate/invalid block deletion evident in the logs and suggests appropriate consistency checks."
+  },
+  "seed13:blk_8279277495935606463": {
+    "judge_score": 1.0,
+    "judge_verdict": "pass",
+    "judge_rationale": "The diagnosis correctly identifies the delete\u2011request for a non\u2011existent block and offers appropriate verification steps."
+  },
+  "seed13:blk_-4824699030744830846": {
+    "judge_score": 1.0,
+    "judge_verdict": "pass",
+    "judge_rationale": "The logs show packet responder terminations, exceptions while serving the block, and subsequent deletions, matching the diagnosis and the suggested non\u2011destructive investigation steps."
+  },
+  "seed13:blk_-746178492861284804": {
+    "judge_score": 1.0,
+    "judge_verdict": "pass",
+    "judge_rationale": "The diagnosis correctly identifies the duplicate addStoredBlock and redundant block warnings as an orphaned block issue and suggests appropriate non\u2011destructive checks."
+  },
+  "seed13:blk_5389935168459786995": {
+    "judge_score": 1.0,
+    "judge_verdict": "pass",
+    "judge_rationale": "The diagnosis accurately cites the IOException seen in the logs as the cause and proposes sensible, non\u2011destructive investigative actions."
+  },
+  "seed13:blk_2477683857062696782": {
+    "judge_score": 1.0,
+    "judge_verdict": "pass",
+    "judge_rationale": "The diagnosis correctly identifies the IOException shown in the logs as the abnormal event and proposes appropriate, non\u2011destructive investigative steps."
+  },
+  "seed13:blk_5952372123504040166": {
+    "judge_score": 1.0,
+    "judge_verdict": "pass",
+    "judge_rationale": "The diagnosis correctly identifies the missing block completion event implied by the logs and suggests appropriate non\u2011destructive investigative steps."
+  },
+  "seed13:blk_-6730152931449105524": {
+    "judge_score": 1.0,
+    "judge_verdict": "pass",
+    "judge_rationale": "The diagnosis correctly identifies the redundant addStoredBlock warning, serving exceptions, and subsequent invalidation/deletion as the abnormal events and proposes reasonable log review and replication checks without destructive actions."
+  },
+  "seed13:blk_4596525681454440771": {
+    "judge_score": 1.0,
+    "judge_verdict": "pass",
+    "judge_rationale": "The diagnosis correctly identifies the orphaned block events and gives appropriate investigative steps."
+  },
+  "seed13:blk_8181549678675893334": {
+    "judge_score": 1.0,
+    "judge_verdict": "pass",
+    "judge_rationale": "The diagnosis correctly identifies the torn write pipeline and missing finalization evident in the logs and suggests appropriate non\u2011destructive investigation steps."
+  },
+  "seed13:blk_2819740603479754270": {
+    "judge_score": 1.0,
+    "judge_verdict": "pass",
+    "judge_rationale": "The diagnosis accurately ties the orphaned block, premature pipeline termination, and serving exceptions evident in the logs to an incomplete write and suggests appropriate, non\u2011destructive investigative remediation."
+  },
+  "seed13:blk_8457680559975994708": {
+    "judge_score": 1.0,
+    "judge_verdict": "pass",
+    "judge_rationale": "The diagnosis accurately pinpoints the delete\u2011mismatch warning as the abnormal event and proposes appropriate, non\u2011destructive investigative steps."
+  },
+  "seed13:blk_-7144572636070509322": {
+    "judge_score": 1.0,
+    "judge_verdict": "pass",
+    "judge_rationale": "The diagnosis correctly identifies the IOException in the logs as the root cause and suggests appropriate, non\u2011destructive investigative steps."
+  },
+  "seed13:blk_-2356531211325679524": {
+    "judge_score": 1.0,
+    "judge_verdict": "pass",
+    "judge_rationale": "The diagnosis correctly identifies the IOException shown in the logs and offers appropriate, non\u2011destructive investigative steps."
+  },
+  "seed13:blk_-9175463683870012043": {
+    "judge_score": 1.0,
+    "judge_verdict": "pass",
+    "judge_rationale": "The diagnosis correctly identifies the absent completion/report events in the log and proposes appropriate investigative steps."
+  }
+}
