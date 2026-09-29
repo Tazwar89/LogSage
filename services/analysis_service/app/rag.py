@@ -4,8 +4,14 @@ import time
 
 # Qdrant collections use EUCLID distance on normalized embeddings (range 0-2; lower = closer).
 # Entries farther than this are dropped so unrelated KB items never reach the LLM.
-# Calibrate against a few known-relevant and known-irrelevant pairs before trusting the default.
-RAG_MAX_DISTANCE = float(os.getenv("RAG_MAX_DISTANCE", "1.0"))
+# Calibrated on a manually-labeled sample: 30 unique (KB entry, log line) pairs
+# from a 60-block eval run (5 labeled relevant, 25 irrelevant). No cutoff fully
+# separates them -- farthest relevant pair was dist 0.94, closest irrelevant
+# was dist 0.75 -- so 0.70 trades recall (keeps only 1/5 relevant matches) for
+# zero false-positive KB matches on this sample, since a wrong KB match misleads
+# the report node while no match safely falls back to log-only reasoning.
+# Small sample, single KB, not re-validated since. See eval/rag_labels.csv.
+RAG_MAX_DISTANCE = float(os.getenv("RAG_MAX_DISTANCE", "0.70"))
 RAG_MAX_QUERY_LINES = int(os.getenv("RAG_MAX_QUERY_LINES", "40"))
 
 # Set RAG_LOG_ALL_DISTANCES=true to append every candidate (query line, KB
